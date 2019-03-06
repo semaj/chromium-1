@@ -754,6 +754,10 @@ void ContentBrowserClient::WillCreateWebSocket(
     network::mojom::WebSocketRequest* request,
     network::mojom::AuthenticationHandlerPtr* auth_handler) {}
 
+void ContentBrowserClient::WillCreateCatalystSocket(       
+    RenderFrameHost* frame,                                
+    network::mojom::CatalystSocketRequest* request) {}     
+
 std::vector<std::unique_ptr<URLLoaderRequestInterceptor>>
 ContentBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,

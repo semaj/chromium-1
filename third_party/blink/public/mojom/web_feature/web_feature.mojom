@@ -2227,6 +2227,7 @@ enum WebFeature {
   kAnimationFrameCancelledWithinFrame = 2793,
   kSchedulingIsInputPending = 2794,
   kV8StringNormalize = 2795,
+  kUDPSocket = 2796,
 
   // Add new features immediately above this line. Don't change assigned
   // numbers of any item, and don't reuse removed slots.

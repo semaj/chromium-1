@@ -197,6 +197,7 @@ const service_manager::Manifest& GetContentBrowserManifest() {
                   "network.mojom.RestrictedCookieManager",
                   "network.mojom.WebSocket", "payments.mojom.PaymentManager",
                   "shape_detection.mojom.BarcodeDetectionProvider",
+                  "network.mojom.CatalystSocket",   
                   "shape_detection.mojom.FaceDetectionProvider",
                   "shape_detection.mojom.TextDetection"})
           .ExposeInterfaceFilterCapability_Deprecated(
@@ -244,6 +245,7 @@ const service_manager::Manifest& GetContentBrowserManifest() {
                   "content.mojom.BrowserTarget",
                   "content.mojom.InputInjector",
                   "content.mojom.RendererAudioInputStreamFactory",
+                  "network.mojom.CatalystSocket",
                   "content.mojom.RendererAudioOutputStreamFactory",
                   "device.mojom.GamepadMonitor",
                   "device.mojom.Geolocation",

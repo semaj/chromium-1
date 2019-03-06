@@ -157,6 +157,7 @@ target("jumbo_" + modules_target_type, "modules") {
     "//third_party/blink/renderer/modules/webmidi",
     "//third_party/blink/renderer/modules/webshare",
     "//third_party/blink/renderer/modules/websockets",
+    "//third_party/blink/renderer/modules/udp_sockets",
     "//third_party/blink/renderer/modules/webusb",
     "//third_party/blink/renderer/modules/worklet",
     "//third_party/blink/renderer/modules/xr",

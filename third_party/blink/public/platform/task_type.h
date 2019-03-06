@@ -221,6 +221,8 @@ enum class TaskType : unsigned {
   kWorkerThreadTaskQueueCompositor = 48,
 
   kCount = 62,
+
+  kUDPSocket = 63,
 };
 
 }  // namespace blink

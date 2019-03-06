@@ -1280,6 +1280,7 @@ class CONTENT_EXPORT RenderFrameHostImpl
       media::mojom::InterfaceFactoryRequest request);
 
   void CreateWebSocket(network::mojom::WebSocketRequest request);
+  void CreateCatalystSocket(network::mojom::CatalystSocketRequest request);
 
   void CreateDedicatedWorkerHostFactory(
       blink::mojom::DedicatedWorkerHostFactoryRequest request);

@@ -192,6 +192,12 @@ jumbo_component("network_service") {
       "websocket_factory.h",
       "websocket_throttler.cc",
       "websocket_throttler.h",
+      "catalyst_socket.cc",             
+      "catalyst_socket.h",              
+      "catalyst_socket_factory.cc",     
+      "catalyst_socket_factory.h",      
+      "catalyst_socket_throttler.cc",   
+      "catalyst_socket_throttler.h",    
     ]
   }
 

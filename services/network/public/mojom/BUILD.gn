@@ -70,6 +70,23 @@ mojom("websocket_mojom") {
   }
 }
 
+mojom("catalyst_socket_mojom") {                                             
+  sources = [                                                                
+    "catalyst_socket.mojom",                                                 
+  ]                                                                          
+                                                                             
+  public_deps = [                                                            
+    "//url/mojom:url_mojom_gurl",                                            
+    "//url/mojom:url_mojom_origin",                                          
+  ]                                                                          
+                                                                             
+  if (!is_ios) {                                                             
+    export_class_attribute_blink = "BLINK_PLATFORM_EXPORT"                   
+    export_define_blink = "BLINK_PLATFORM_IMPLEMENTATION=1"                  
+    export_header_blink = "third_party/blink/public/platform/web_common.h"   
+  }                                                                          
+}                                                                            
+
 mojom("mojom") {
   sources = [
     "cookie_manager.mojom",
@@ -110,6 +127,7 @@ mojom("mojom") {
     ":mojom_ip_address",
     ":mutable_network_traffic_annotation_interface",
     ":websocket_mojom",
+    ":catalyst_socket_mojom",
     "//components/content_settings/core/common:mojo_bindings",
     "//mojo/public/mojom/base",
     "//mojo/public/mojom/base:read_only_buffer",

@@ -1875,6 +1875,8 @@ jumbo_source_set("browser") {
     "websockets/websocket_handshake_request_info_impl.h",
     "websockets/websocket_manager.cc",
     "websockets/websocket_manager.h",
+    "catalyst_sockets/catalyst_socket_manager.cc",    
+    "catalyst_sockets/catalyst_socket_manager.h",     
     "webui/content_web_ui_controller_factory.cc",
     "webui/content_web_ui_controller_factory.h",
     "webui/generic_handler.cc",

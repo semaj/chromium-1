@@ -480,6 +480,9 @@ class ChromeContentBrowserClient : public content::ContentBrowserClient {
       content::RenderFrameHost* frame,
       network::mojom::WebSocketRequest* request,
       network::mojom::AuthenticationHandlerPtr* auth_handler) override;
+  void WillCreateCatalystSocket(                                
+      content::RenderFrameHost* frame,                          
+      network::mojom::CatalystSocketRequest* request) override; 
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
   network::mojom::NetworkContextPtr CreateNetworkContext(

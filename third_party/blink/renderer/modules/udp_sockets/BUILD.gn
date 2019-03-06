@@ -1,0 +1,12 @@
+import("//third_party/blink/renderer/modules/modules.gni")
+
+blink_modules_sources("udp_sockets") {
+  sources = [
+    "udp_socket_handle_client.h",
+    "dom_udp_socket.cc",
+    "dom_udp_socket.h",
+    "udp_socket_handle.h",
+    "udp_socket_handle_impl.h",
+    "udp_socket_handle_impl.cc",
+  ]
+}

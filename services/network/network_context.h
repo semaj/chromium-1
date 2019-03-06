@@ -44,6 +44,8 @@
 #include "services/network/public/mojom/udp_socket.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
+#include "services/network/public/mojom/catalyst_socket.mojom.h"      
+#include "services/network/catalyst_socket_factory.h"                 
 #include "services/network/socket_factory.h"
 #include "services/network/url_request_context_owner.h"
 
@@ -272,6 +274,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
                        int32_t render_frame_id,
                        const url::Origin& origin,
                        mojom::AuthenticationHandlerPtr auth_handler) override;
+  void CreateCatalystSocket(mojom::CatalystSocketRequest request,           
+      int32_t process_id,                                                   
+      int32_t render_frame_id,                                              
+      const url::Origin& origin) override;                                  
   void CreateNetLogExporter(mojom::NetLogExporterRequest request) override;
   void ResolveHost(const net::HostPortPair& host,
                    mojom::ResolveHostParametersPtr optional_parameters,
@@ -478,6 +484,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
 
 #if !defined(OS_IOS)
   std::unique_ptr<WebSocketFactory> websocket_factory_;
+  std::unique_ptr<CatalystSocketFactory> catalyst_socket_factory_;  
 #endif  // !defined(OS_IOS)
 
   // These must be below the URLRequestContext, so they're destroyed before it

@@ -41,6 +41,8 @@ const char* TaskTypeNames::TaskTypeToString(TaskType task_type) {
       return "RemoteEvent";
     case TaskType::kWebSocket:
       return "WebSocket";
+    case TaskType::kUDPSocket:
+      return "UDPSocket";
     case TaskType::kPostedMessage:
       return "PostedMessage";
     case TaskType::kUnshippedPortMessage:

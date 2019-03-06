@@ -99,9 +99,8 @@ class SocketWrapperImpl : public UDPSocket::SocketWrapper {
   int Write(
       net::IOBuffer* buf,
       int buf_len,
-      net::CompletionOnceCallback callback,
-      const net::NetworkTrafficAnnotationTag& traffic_annotation) override {
-    return socket_.Write(buf, buf_len, std::move(callback), traffic_annotation);
+      net::CompletionOnceCallback callback) override {
+    return socket_.Write(buf, buf_len, std::move(callback));
   }
   int RecvFrom(net::IOBuffer* buf,
                int buf_len,
@@ -406,8 +405,7 @@ void UDPSocket::DoSendToOrWriteBuffer(
     net_result = wrapped_socket_->Write(
         buffer.get(), buffer->size(),
         base::BindRepeating(&UDPSocket::OnSendToCompleted,
-                            base::Unretained(this)),
-        traffic_annotation);
+                            base::Unretained(this)));
   }
   if (net_result != net::ERR_IO_PENDING)
     OnSendToCompleted(net_result);

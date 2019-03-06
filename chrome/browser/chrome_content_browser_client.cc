@@ -4889,6 +4889,12 @@ void ChromeContentBrowserClient::WillCreateWebSocket(
 #endif
 }
 
+void ChromeContentBrowserClient::WillCreateCatalystSocket(   
+    content::RenderFrameHost* frame,                         
+    network::mojom::CatalystSocketRequest* request) {        
+                                                             
+}                                                            
+
 void ChromeContentBrowserClient::OnNetworkServiceCreated(
     network::mojom::NetworkService* network_service) {
   chrome::MaybeStartNoopService();

@@ -18,6 +18,7 @@ class SingleThreadTaskRunner;
 
 namespace content {
 class WebSocketManager;
+class CatalystSocketManager;
 }
 
 #if defined(OS_IOS)
@@ -74,6 +75,7 @@ class NET_EXPORT URLRequestContextGetter
   // visibility.
   friend class URLFetcherCore;
   friend class content::WebSocketManager;
+  friend class content::CatalystSocketManager;
 
 #if defined(OS_IOS)
   friend class web::NetworkContextOwner;

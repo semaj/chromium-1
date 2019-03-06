@@ -1,0 +1,29 @@
+[
+    ActiveScriptWrappable,
+    Constructor(),
+    ConstructorCallWith=ExecutionContext,
+    Exposed=(Window),
+    ImplementedAs=DOMUDPSocket,
+    RaisesException=Constructor
+] interface UDPSocket : EventTarget {
+    // ready state
+    const unsigned short CONNECTING = 0;
+    const unsigned short OPEN = 1;
+    const unsigned short CLOSED = 2;
+    readonly attribute unsigned short readyState;
+
+    // networking
+    attribute EventHandler onopen;
+    attribute EventHandler onerror;
+    //attribute EventHandler onclose;
+    [RaisesException] void close();
+    [RaisesException] boolean certIsValid(USVString cert_chain);
+
+    // messaging
+    attribute EventHandler onmessage;
+    //attribute BinaryType binaryType;
+    //[RaisesException] void send(USVString data);
+    //[RaisesException] void send(Blob data);
+    //[RaisesException] void send(ArrayBuffer data);
+    [RaisesException] void send(ArrayBufferView data);
+};

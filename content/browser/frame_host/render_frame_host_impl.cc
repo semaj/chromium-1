@@ -99,6 +99,7 @@
 #include "content/browser/webauth/authenticator_impl.h"
 #include "content/browser/webauth/scoped_virtual_authenticator_environment.h"
 #include "content/browser/websockets/websocket_manager.h"
+#include "content/browser/catalyst_sockets/catalyst_socket_manager.h"   
 #include "content/browser/webui/url_data_manager_backend.h"
 #include "content/browser/webui/web_ui_controller_factory_registry.h"
 #include "content/browser/webui/web_ui_url_loader_factory_internal.h"
@@ -3994,6 +3995,9 @@ void RenderFrameHostImpl::RegisterMojoInterfaces() {
   registry_->AddInterface(base::BindRepeating(
       &RenderFrameHostImpl::CreateWebSocket, base::Unretained(this)));
 
+  registry_->AddInterface(base::BindRepeating(                                
+        &RenderFrameHostImpl::CreateCatalystSocket, base::Unretained(this)));   
+
   registry_->AddInterface(base::BindRepeating(
       &RenderFrameHostImpl::CreateDedicatedWorkerHostFactory,
       base::Unretained(this)));
@@ -5658,6 +5662,19 @@ void RenderFrameHostImpl::BindMediaInterfaceFactoryRequest(
       base::Bind(&RenderFrameHostImpl::OnMediaInterfaceFactoryConnectionError,
                  base::Unretained(this))));
 }
+
+void RenderFrameHostImpl::CreateCatalystSocket(                                  
+    network::mojom::CatalystSocketRequest request) {                             
+  //network::mojom::AuthenticationHandlerPtr auth_handler;                       
+  GetContentClient()->browser()->WillCreateCatalystSocket(this, &request);       
+                                                                                 
+  // This is to support usage of WebSockets in cases in which there is an        
+  // associated RenderFrame. This is important for showing the correct security  
+  // state of the page and also honoring user override of bad certificates.      
+  CatalystSocketManager::CreateCatalystSocket(                                   
+      process_->GetID(), routing_id_, last_committed_origin_,                    
+      std::move(request));                                                       
+}                                                                                
 
 void RenderFrameHostImpl::CreateWebSocket(
     network::mojom::WebSocketRequest request) {

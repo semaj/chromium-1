@@ -58,8 +58,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) UDPSocket : public mojom::UDPSocket {
     virtual int Write(
         net::IOBuffer* buf,
         int buf_len,
-        net::CompletionOnceCallback callback,
-        const net::NetworkTrafficAnnotationTag& traffic_annotation) = 0;
+        net::CompletionOnceCallback callback) = 0;
     virtual int SetBroadcast(bool broadcast) = 0;
     virtual int SetSendBufferSize(int send_buffer_size) = 0;
     virtual int SetReceiveBufferSize(int receive_buffer_size) = 0;

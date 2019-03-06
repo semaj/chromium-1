@@ -260,37 +260,10 @@ bool UdpTransportImpl::SendPacket(PacketRef packet,
     // If we called Connect() before we must call Write() instead of
     // SendTo(). Otherwise on some platforms we might get
     // ERR_SOCKET_IS_CONNECTED.
-    net::NetworkTrafficAnnotationTag traffic_annotation =
-        net::DefineNetworkTrafficAnnotation("cast_udp_transport", R"(
-        semantics {
-          sender: "Cast Streaming"
-          description:
-            "Media streaming protocol for LAN transport of screen mirroring "
-            "audio/video. This is also used by browser features that wish to "
-            "send browser content for remote display, and such features are "
-            "generally started/stopped from the Media Router dialog."
-          trigger:
-            "User invokes feature from the Media Router dialog (right click on "
-            "page, 'Cast...')."
-          data:
-            "Media and related protocol-level control and performance messages."
-          destination: OTHER
-          destination_other:
-            "A playback receiver, such as a Chromecast device."
-        }
-        policy {
-          cookies_allowed: NO
-          setting: "This feature cannot be disabled in settings."
-          chrome_policy {
-            EnableMediaRouter {
-              EnableMediaRouter: false
-            }
-          }
-        })");
 
     result =
         udp_socket_->Write(buf.get(), static_cast<int>(packet->data.size()),
-                           callback, traffic_annotation);
+                           callback);
   } else if (!IsEmpty(remote_addr_)) {
     result =
         udp_socket_->SendTo(buf.get(), static_cast<int>(packet->data.size()),

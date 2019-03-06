@@ -417,6 +417,7 @@ base::Optional<QueueTraits> FrameSchedulerImpl::CreateQueueTraitsForTaskType(
     case TaskType::kCanvasBlobSerialization:
     case TaskType::kRemoteEvent:
     case TaskType::kWebSocket:
+    case TaskType::kUDPSocket:
     case TaskType::kMicrotask:
     case TaskType::kUnshippedPortMessage:
     case TaskType::kFileReading:

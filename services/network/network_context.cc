@@ -1318,6 +1318,20 @@ void NetworkContext::CreateWebSocket(
 #endif  // !defined(OS_IOS)
 }
 
+void NetworkContext::CreateCatalystSocket(                                     
+    mojom::CatalystSocketRequest request,                                      
+    int32_t process_id,                                                        
+    int32_t render_frame_id,                                                   
+    const url::Origin& origin) {                                               
+#if !defined(OS_IOS)                                                           
+  if (!catalyst_socket_factory_)                                               
+    catalyst_socket_factory_ = std::make_unique<CatalystSocketFactory>(this);  
+  catalyst_socket_factory_->CreateCatalystSocket(std::move(request),           
+                                       process_id,                             
+                                      render_frame_id, origin);                
+#endif  // !defined(OS_IOS)                                                    
+}                                                                              
+
 void NetworkContext::CreateNetLogExporter(
     mojom::NetLogExporterRequest request) {
   net_log_exporter_bindings_.AddBinding(std::make_unique<NetLogExporter>(this),

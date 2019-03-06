@@ -11,7 +11,6 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 
-#include "base/bind.h"
 #include "base/callback.h"
 #include "base/callback_helpers.h"
 #include "base/containers/stack_container.h"
@@ -413,8 +412,7 @@ int UDPSocketPosix::RecvFrom(IOBuffer* buf,
 int UDPSocketPosix::Write(
     IOBuffer* buf,
     int buf_len,
-    CompletionOnceCallback callback,
-    const NetworkTrafficAnnotationTag& traffic_annotation) {
+    CompletionOnceCallback callback) {
   return SendToOrWrite(buf, buf_len, NULL, std::move(callback));
 }
 
@@ -462,10 +460,7 @@ int UDPSocketPosix::Connect(const IPEndPoint& address) {
   DCHECK_NE(socket_, kInvalidSocket);
   net_log_.BeginEvent(NetLogEventType::UDP_CONNECT,
                       CreateNetLogUDPConnectCallback(&address, bound_network_));
-  int rv = SetMulticastOptions();
-  if (rv != OK)
-    return rv;
-  rv = InternalConnect(address);
+  int rv = InternalConnect(address);
   net_log_.EndEventWithNetErrorCode(NetLogEventType::UDP_CONNECT, rv);
   is_connected_ = (rv == OK);
   if (rv != OK)
@@ -699,7 +694,7 @@ int UDPSocketPosix::AllowAddressSharingForMulticast() {
   int value = 1;
   rv = setsockopt(socket_, SOL_SOCKET, SO_REUSEPORT, &value, sizeof(value));
   // Ignore errors that the option does not exist.
-  if (rv != 0 && errno != ENOPROTOOPT)
+  if (rv != 0 && rv != ENOPROTOOPT)
     return MapSystemError(errno);
 #endif  // SO_REUSEPORT
 
@@ -896,8 +891,11 @@ int UDPSocketPosix::InternalSendTo(IOBuffer* buf,
     }
   }
 
+  DVLOG(1) << "SENDTO: " << buf->data()[0];
   int result = HANDLE_EINTR(sendto(socket_, buf->data(), buf_len, sendto_flags_,
                                    addr, storage.addr_len));
+
+  DVLOG(1) << "FINISHED SENDTO: " << strerror(errno);
   if (result < 0)
     result = MapSystemError(errno);
   if (result != ERR_IO_PENDING)
@@ -951,15 +949,6 @@ int UDPSocketPosix::SetMulticastOptions() {
 #endif  //  !defined(OS_MACOSX)
         int rv = setsockopt(socket_, IPPROTO_IP, IP_MULTICAST_IF,
                             reinterpret_cast<const char*>(&mreq), sizeof(mreq));
-#if defined(OS_FUCHSIA)
-        // Remove this workaround once IP_MULTICAST_IF is implemented.
-        // See https://crbug.com/924792
-        if (rv && errno == EOPNOTSUPP) {
-          LOG(WARNING)
-              << "IP_MULTICAST_IF is not supported. Proceeding anyway.";
-          rv = 0;
-        }
-#endif  // !defined(OS_FUCHSIA)
         if (rv)
           return MapSystemError(errno);
         break;

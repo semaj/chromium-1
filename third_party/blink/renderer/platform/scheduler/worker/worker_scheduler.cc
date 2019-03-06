@@ -141,6 +141,7 @@ scoped_refptr<base::SingleThreadTaskRunner> WorkerScheduler::GetTaskRunner(
     case TaskType::kMicrotask:
     case TaskType::kRemoteEvent:
     case TaskType::kWebSocket:
+    case TaskType::kUDPSocket:
     case TaskType::kUnshippedPortMessage:
     case TaskType::kFileReading:
     case TaskType::kDatabaseAccess:

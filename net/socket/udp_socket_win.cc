@@ -6,7 +6,6 @@
 
 #include <mstcpip.h>
 
-#include "base/bind.h"
 #include "base/callback.h"
 #include "base/lazy_instance.h"
 #include "base/logging.h"
@@ -449,10 +448,7 @@ int UDPSocketWin::Connect(const IPEndPoint& address) {
       NetLogEventType::UDP_CONNECT,
       CreateNetLogUDPConnectCallback(
           &address, NetworkChangeNotifier::kInvalidNetworkHandle));
-  int rv = SetMulticastOptions();
-  if (rv != OK)
-    return rv;
-  rv = InternalConnect(address);
+  int rv = InternalConnect(address);
   net_log_.EndEventWithNetErrorCode(NetLogEventType::UDP_CONNECT, rv);
   is_connected_ = (rv == OK);
   return rv;

@@ -1,0 +1,25 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+module network.mojom;
+
+import "url/mojom/url.mojom";
+
+interface CatalystSocketClient {
+
+  OnError(uint32 custom_reason);
+  OnConnect();
+  OnDataFrame(array<uint8> data);
+};
+
+interface CatalystSocket {
+  // The client side may observe the following disconnection reason from the
+  // service side:
+  const uint32 kInsufficientResources = 1;
+  Connect(CatalystSocketClient client);
+  SendFrame(array<uint8> data);
+  Close();
+  [Sync]
+  IsCertificateValid(string cert_chain) => (bool isValid);
+};

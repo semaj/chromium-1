@@ -72,6 +72,10 @@
       name: "WebSocket",
       ImplementedAs: "DOMWebSocket",
     },
+    {                                   
+      name: "UDPSocket",                
+      ImplementedAs: "DOMUDPSocket",    
+    },                                  
     "USB",
   ],
 }

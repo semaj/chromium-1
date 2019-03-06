@@ -91,7 +91,7 @@ int UDPClientSocket::Write(
     int buf_len,
     CompletionOnceCallback callback,
     const NetworkTrafficAnnotationTag& traffic_annotation) {
-  return socket_.Write(buf, buf_len, std::move(callback), traffic_annotation);
+  return socket_.Write(buf, buf_len, std::move(callback));
 }
 
 int UDPClientSocket::WriteAsync(

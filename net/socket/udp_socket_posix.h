@@ -212,8 +212,7 @@ class NET_EXPORT UDPSocketPosix {
   // has been connected.
   int Write(IOBuffer* buf,
             int buf_len,
-            CompletionOnceCallback callback,
-            const NetworkTrafficAnnotationTag& traffic_annotation);
+            CompletionOnceCallback callback);
 
   // Refer to datagram_client_socket.h
   int WriteAsync(DatagramBuffers buffers,
