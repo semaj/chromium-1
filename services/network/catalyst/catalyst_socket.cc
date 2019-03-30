@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "services/network/catalyst_socket.h"
+#include "catalyst_socket.h"
 
 #include <inttypes.h>
 #include <algorithm>

@@ -45,7 +45,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
 #include "services/network/public/mojom/catalyst_socket.mojom.h"      
-#include "services/network/catalyst_socket_factory.h"                 
+#include "services/network/catalyst/catalyst_socket_factory.h"                 
 #include "services/network/socket_factory.h"
 #include "services/network/url_request_context_owner.h"
 

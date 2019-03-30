@@ -19,7 +19,6 @@
 #include "content/browser/child_process_security_policy_impl.h"
 #include "content/browser/ssl/ssl_error_handler.h"
 #include "content/browser/ssl/ssl_manager.h"
-//#include "content/browser/catalyst_sockets/catalyst_socket_handshake_request_info_impl.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"

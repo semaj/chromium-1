@@ -10,8 +10,8 @@
 #include "base/containers/unique_ptr_adapters.h"
 #include "mojo/public/cpp/bindings/binding.h"
 #include "services/network/public/mojom/catalyst_socket.mojom.h"
-#include "services/network/catalyst_socket.h"
-#include "services/network/catalyst_socket_throttler.h"
+#include "catalyst_socket.h"
+#include "catalyst_socket_throttler.h"
 
 namespace url {
 class Origin;

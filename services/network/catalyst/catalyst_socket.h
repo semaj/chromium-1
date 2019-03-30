@@ -24,7 +24,7 @@
 #include "net/base/completion_once_callback.h"
 //#include "net/websockets/websocket_event_interface.h"
 #include "services/network/public/mojom/catalyst_socket.mojom.h"
-#include "services/network/catalyst_socket_throttler.h"
+#include "catalyst_socket_throttler.h"
 #include "url/origin.h"
 #include "services/network/public/mojom/ip_endpoint.mojom.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"

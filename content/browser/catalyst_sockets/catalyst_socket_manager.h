@@ -16,8 +16,8 @@
 #include "content/common/content_export.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_context_getter_observer.h"
-#include "services/network/catalyst_socket.h"
-#include "services/network/catalyst_socket_throttler.h"
+#include "services/network/catalyst/catalyst_socket.h"
+#include "services/network/catalyst/catalyst_socket_throttler.h"
 
 namespace content {
 class StoragePartition;

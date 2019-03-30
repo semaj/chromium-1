@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "services/network/catalyst_socket_factory.h"
+#include "catalyst_socket_factory.h"
 
 #include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "services/network/network_context.h"
 #include "services/network/network_service.h"
 #include "services/network/public/mojom/network_service.mojom.h"
-#include "services/network/catalyst_socket.h"
+#include "catalyst_socket.h"
 #include "url/origin.h"
 
 namespace network {
