@@ -11,6 +11,9 @@
 #include <string>
 #include <vector>
 
+#include "dtls_client_socket_impl.h"
+#include "udp_stream_socket.h"
+
 #include "base/component_export.h"
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
@@ -38,6 +41,7 @@
 #include "net/cert/multi_threaded_cert_verifier.h"
 #include "net/cert/x509_util.h"
 #include "net/cert/cert_verify_proc.h"
+#include "net/socket/stream_socket.h"
 
 class GURL;
 
@@ -53,24 +57,6 @@ namespace network {
 class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystSocket {
   public:
     static const uint32_t kMaxPendingSendRequests = 32;
-    // A socket wrapper class that allows tests to substitute the default
-    // implementation (implemented using net::UDPSocket) with a test
-    // implementation.
-    class SocketWrapper {
-      public:
-        virtual ~SocketWrapper() {}
-        // This wrapper class forwards the functions to a concrete udp socket
-        // implementation. Please refer to udp_socket_posix.h/udp_socket_win.h for
-        // definitions.
-        virtual int Connect(net::IPEndPoint* local_addr_out) = 0;
-        virtual int Send(
-            net::IOBuffer* buf,
-            int buf_len,
-            net::CompletionOnceCallback callback) = 0;
-        virtual int Recv(net::IOBuffer* buf,
-            int buf_len,
-            net::CompletionOnceCallback callback) = 0;
-    };
     class Delegate {
       public:
         virtual ~Delegate() {}
@@ -118,6 +104,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void OnSendComplete(int rv);
     void DoRecv();
     void OnError();
+    void OnConnect(int rv);
     void OnValidationComplete(IsCertificateValidCallback callback, int rv);
 
     scoped_refptr<net::IOBuffer> recvfrom_buffer_;
@@ -127,7 +114,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
 
     mojom::CatalystSocketClientPtr client_;
 
-    std::unique_ptr<SocketWrapper> wrapped_socket_;
+    std::unique_ptr<net::DTLSClientSocketImpl> wrapped_socket_;
 
     // Delay used for per-renderer CatalystSocket throttling.
     base::TimeDelta delay_;
@@ -151,7 +138,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
   private:
     void OnRecvComplete(int rv);
     // Helper method to create a new SocketWrapper.
-    std::unique_ptr<CatalystSocket::SocketWrapper> CreateSocketWrapper(net::IPEndPoint& remote_addr) const;
+    std::unique_ptr<net::DTLSClientSocketImpl> CreateSocketWrapper(net::IPEndPoint& remote_addr) const;
 };
 
 }  // namespace network

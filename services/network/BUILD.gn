@@ -198,6 +198,10 @@ jumbo_component("network_service") {
       "catalyst/catalyst_socket_factory.h",      
       "catalyst/catalyst_socket_throttler.cc",   
       "catalyst/catalyst_socket_throttler.h",    
+      "catalyst/dtls_client_socket_impl.h",    
+      "catalyst/dtls_client_socket_impl.cc",    
+      "catalyst/udp_stream_socket.h",    
+      "catalyst/udp_stream_socket.cc",    
     ]
   }
 

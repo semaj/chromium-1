@@ -26,80 +26,9 @@
 #include "net/http/http_response_headers.h"
 #include "net/http/http_util.h"
 #include "net/ssl/ssl_info.h"
+#include "net/base/host_port_pair.h"
 
 namespace network {
-namespace {
-
-class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
- public:
-  CatalystSocketWrapperImpl(net::DatagramSocket::BindType bind_type,
-                    net::NetLog* net_log,
-                    const net::NetLogSource& source,
-                    net::IPEndPoint& remote_addr)
-      : socket_(bind_type, net_log, source),
-        dest_addr_(remote_addr){}
-  ~CatalystSocketWrapperImpl() override {}
-
-  int Connect(net::IPEndPoint* local_addr_out) override {
-    int result = socket_.Open(dest_addr_.GetFamily());
-    if (result == net::OK)
-      result = socket_.Connect(dest_addr_);
-    if (result == net::OK)
-      result = socket_.GetLocalAddress(local_addr_out);
-
-    if (result != net::OK)
-      socket_.Close();
-    socket_.SetReceiveBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
-    //socket_.SetSendBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
-    DVLOG(1) << "Wrapped socket Successfully connected";
-    return result;
-  }
-  int Send(
-      net::IOBuffer* buf,
-      int buf_len,
-      net::CompletionOnceCallback callback) override {
-    DVLOG(1) << "Wrapped socket trying SendTo";
-    return socket_.Write(buf, buf_len, std::move(callback));
-  }
-  int Recv(net::IOBuffer* buf,
-               int buf_len,
-               net::CompletionOnceCallback callback) override {
-    return socket_.RecvFrom(buf, buf_len, &dest_addr_, std::move(callback));
-  }
-
- private:
-
-  int ClampUDPBufferSize(int requested_buffer_size) {
-    constexpr int kMinBufferSize = 0;
-    constexpr int kMaxBufferSize = 128 * 1024;
-    return base::ClampToRange(requested_buffer_size, kMinBufferSize,
-        kMaxBufferSize);
-  }
-
-  int ConfigureOptions(mojom::UDPSocketOptionsPtr options) {
-    if (!options)
-      return net::OK;
-    int result = net::OK;
-    if (options->allow_address_reuse)
-      result = socket_.AllowAddressReuse();
-    if (result == net::OK && options->receive_buffer_size != 0) {
-      result = socket_.SetReceiveBufferSize(
-          ClampUDPBufferSize(options->receive_buffer_size));
-    }
-    if (result == net::OK && options->send_buffer_size != 0) {
-      result = socket_.SetSendBufferSize(
-          ClampUDPBufferSize(options->send_buffer_size));
-    }
-    return result;
-  }
-
-  net::UDPSocket socket_;
-  net::IPEndPoint& dest_addr_;
-
-  DISALLOW_COPY_AND_ASSIGN(CatalystSocketWrapperImpl);
-};
-
-}  // namespace
 
 CatalystSocket::CatalystSocket(
     std::unique_ptr<Delegate> delegate,
@@ -158,10 +87,17 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     net::IOBuffer *data_to_pass = new net::IOBuffer(data.size());
     std::copy(data.begin(), data.end(), data_to_pass->data());
     DVLOG(1) << "Trying send.";
-    int net_result = wrapped_socket_->Send(
+    const net::NetworkTrafficAnnotationTag bad_traffic_annotation =
+      net::DefineNetworkTrafficAnnotation("bad", R"(
+          trigger: "Chrome sends this when [obscure event that is not related to anything user-perceivable]."
+          data: "This sends everything the feature needs to know."
+          policy_exception_justification: "None."
+          )");
+    int net_result = wrapped_socket_->Write(
         std::move(data_to_pass), data.size(),
         base::BindOnce(&CatalystSocket::OnSendComplete, 
-                       weak_ptr_factory_.GetWeakPtr()));
+                       weak_ptr_factory_.GetWeakPtr()),
+        bad_traffic_annotation);
     if (net_result != net::ERR_IO_PENDING) {
       DVLOG(1) << "Executing send: " << net_result;
       OnSendComplete(net_result);
@@ -232,7 +168,7 @@ void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
       base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(CatalystSocket::kMaxReadSize));
   DVLOG(1) << "Starting DoRecv";
-  int net_result = wrapped_socket_->Recv(
+  int net_result = wrapped_socket_->Read(
       recvfrom_buffer_.get(), CatalystSocket::kMaxReadSize, 
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
@@ -265,15 +201,23 @@ void CatalystSocket::OnResolveComplete(int rv) {
   DVLOG(1) << "Resolved to: " << ip_endpoint.ToString();
   DCHECK(!wrapped_socket_);
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
-  net::IPEndPoint local_addr_out;
-  int result = wrapped_socket_->Connect(&local_addr_out);
-  if (result != net::OK) {
+  int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
+  
+  if (result != net::ERR_IO_PENDING) {
+    OnConnect(result);
+  } else if (result != net::OK) {
     wrapped_socket_.reset();
-    return;
   }
-  is_connected_ = true;
-  client_->OnConnect();
-  DoRecv();
+}
+
+void CatalystSocket::OnConnect(int result) {
+  if (result == net::OK) {
+    is_connected_ = true;
+    client_->OnConnect();
+    DoRecv();
+  } else {
+    wrapped_socket_.reset();
+  }
 }
 
 void CatalystSocket::Connect(mojom::CatalystSocketClientPtr client) {
@@ -301,11 +245,19 @@ void CatalystSocket::OnError() {
   //delegate_->OnLostConnectionToClient(this);
 }
 
-std::unique_ptr<CatalystSocket::SocketWrapper> CatalystSocket::CreateSocketWrapper(net::IPEndPoint& remote_addr)
+std::unique_ptr<net::DTLSClientSocketImpl> CatalystSocket::CreateSocketWrapper(net::IPEndPoint& remote_addr)
     const {
-  return std::make_unique<CatalystSocketWrapperImpl>(net::DatagramSocket::RANDOM_BIND,
-                                             nullptr, net::NetLogSource(),
-                                             remote_addr);
+  net::SSLConfig ssl_config;
+  delegate_->GetURLRequestContext()->ssl_config_service()->GetSSLConfig(&ssl_config);
+  const net::SSLClientSocketContext ssl_context = net::SSLClientSocketContext(delegate_->GetURLRequestContext()->cert_verifier(),
+       nullptr,
+       delegate_->GetURLRequestContext()->transport_security_state(),
+       delegate_->GetURLRequestContext()->cert_transparency_verifier(),
+       delegate_->GetURLRequestContext()->ct_policy_enforcer(),
+       nullptr /* Disables SSL session caching */);
+
+  return std::make_unique<net::DTLSClientSocketImpl>(std::make_unique<UDPStreamSocket>(net::DatagramSocket::RANDOM_BIND, nullptr, net::NetLogSource(), remote_addr), net::HostPortPair::FromIPEndPoint(remote_addr), ssl_config, ssl_context);
+
 }
 
 }  // namespace network
