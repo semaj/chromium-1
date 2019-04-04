@@ -113,6 +113,8 @@ source_set("constants") {
 
 component("net") {
   sources = [
+    "socket/dtls_client_socket_impl.h",    
+    "socket/dtls_client_socket_impl.cc",    
     "base/address_family.cc",
     "base/address_family.h",
     "base/address_list.cc",

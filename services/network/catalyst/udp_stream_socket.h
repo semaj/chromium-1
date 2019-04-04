@@ -50,12 +50,10 @@ namespace network {
       UDPStreamSocket(net::DatagramSocket::BindType bind_type,
           net::NetLog* net_log,
           const net::NetLogSource& source,
-          net::IPEndPoint& remote_addr)
-        : socket_(bind_type, net_log, source),
-        dest_addr_(remote_addr),
-        is_connected_(false),
-        was_ever_used_(false) {}
-      ~UDPStreamSocket() override {}
+          net::IPEndPoint& remote_addr);
+      ~UDPStreamSocket() override;
+
+      static const uint32_t kMaxReadSize = 64 * 1024;
 
       // StreamSocket
       //void SetBeforeConnectCallback(

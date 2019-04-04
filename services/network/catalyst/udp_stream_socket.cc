@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "dtls_stream_socket.h"
+#include "services/network/catalyst/udp_stream_socket.h"
 
 #include <inttypes.h>
 #include <algorithm>
@@ -36,9 +36,9 @@ namespace network {
     : socket_(bind_type, net_log, source),
     dest_addr_(remote_addr),
     is_connected_(false),
-    was_ever_used_(false),{}
+    was_ever_used_(false){}
 
-  ~CatalystSocketWrapperImpl() {}
+  UDPStreamSocket::~UDPStreamSocket() {}
 
   //void UDPStreamSocket::SetBeforeConnectCallback(const BeforeCallback& before_connect_callback) {
     //before_connect_callback_ = before_connect_callback;
@@ -46,17 +46,14 @@ namespace network {
 
   int UDPStreamSocket::Connect(net::CompletionOnceCallback callback){
     int result = socket_.Open(dest_addr_.GetFamily());
-    int kMinBufferSize = 0;
-    int kMaxBufferSize = 128 * 1024;
-    int clamped = base::ClampToRange(CatalystSocket::kMaxReadSize, kMinBufferSize, kMaxBufferSize);
-    socket_.SetReceiveBufferSize(clamped);
-    socket_.SetSendBufferSize(clamped);
+    socket_.SetReceiveBufferSize(kMaxReadSize);
+    socket_.SetSendBufferSize(kMaxReadSize);
     if (result == net::OK) {
-      std::move(before_connect_callback_).Run(result);
+      //std::move(before_connect_callback_).Run(result);
       result = socket_.Connect(dest_addr_);
     }
     if (result == net::OK) {
-      net::IPEndPoint& local_addr;
+      net::IPEndPoint *local_addr = nullptr;
       result = socket_.GetLocalAddress(local_addr);
     }
 
@@ -69,7 +66,7 @@ namespace network {
   }
 
   void UDPStreamSocket::Disconnect() {
-    is_connected = false;
+    is_connected_ = false;
     was_ever_used_ = false;
     socket_.Close();
   }
@@ -78,55 +75,55 @@ namespace network {
     return is_connected_;
   }
 
-  bool IsConnectedAndIdle() const {
+  bool UDPStreamSocket::IsConnectedAndIdle() const {
     return is_connected_;
   }
 
-  int GetPeerAddress(net::IPEndPoint *address) const {
+  int UDPStreamSocket::GetPeerAddress(net::IPEndPoint *address) const {
     return socket_.GetPeerAddress(address);
   }
 
-  int GetLocalAddress(net::IPEndPoint *address) const {
+  int UDPStreamSocket::GetLocalAddress(net::IPEndPoint *address) const {
     return socket_.GetLocalAddress(address);
   }
 
-  net::NetLogWithSource& NetLog() const {
+  const net::NetLogWithSource& UDPStreamSocket::NetLog() const {
     return socket_.NetLog();
   }
 
-  bool WasEverUsed() const {
+  bool UDPStreamSocket::WasEverUsed() const {
     return was_ever_used_;
   }
 
-  bool WasAlpnNegotiated() const {
+  bool UDPStreamSocket::WasAlpnNegotiated() const {
     return false;
   }
 
-  bool GetNegotiatedProtocol() const {
+  net::NextProto UDPStreamSocket::GetNegotiatedProtocol() const {
     return net::kProtoUnknown;
   }
 
-  bool GetSSLInfo(net::SSLInfo* ssl_info) {
+  bool UDPStreamSocket::GetSSLInfo(net::SSLInfo* ssl_info) {
     return false;
   }
 
-  void GetConnectionAttempts(net::ConnectionAttempts* out) const {
+  void UDPStreamSocket::GetConnectionAttempts(net::ConnectionAttempts* out) const {
   }
 
-  void ClearConnectionAttempts() {
+  void UDPStreamSocket::ClearConnectionAttempts() {
   }
 
-  void AddConnectionATtempts(const ConnectionAttempts& attempts) {
+  void UDPStreamSocket::AddConnectionAttempts(const net::ConnectionAttempts& attempts) {
   }
 
-  int64_t GetTotalReceivedBytes() const {
+  int64_t UDPStreamSocket::GetTotalReceivedBytes() const {
     return 0;
   }
 
-  void ApplySocketTag(const SocketTag& tag) {
+  void UDPStreamSocket::ApplySocketTag(const net::SocketTag& tag) {
   }
 
-  int Write(
+  int UDPStreamSocket::Write(
       net::IOBuffer* buf,
       int buf_len,
       net::CompletionOnceCallback callback,
@@ -135,7 +132,7 @@ namespace network {
     return socket_.Write(buf, buf_len, std::move(callback));
   }
 
-  int Read(net::IOBuffer* buf,
+  int UDPStreamSocket::Read(net::IOBuffer* buf,
                int buf_len,
                net::CompletionOnceCallback callback) {
     was_ever_used_ = true;
@@ -145,19 +142,11 @@ namespace network {
     return socket_.RecvFrom(buf, buf_len, &dest_addr_, std::move(callback));
   }
 
-  int SetReceiveBufferSize(int32_t size) {
-    socket_.SetReceiveBufferSize(size);
-  }
-  int SetSendBufferSize(int32_t size) {
-    socket_.SetSendBufferSize(size);
+  int UDPStreamSocket::SetReceiveBufferSize(int32_t size) {
+    return socket_.SetReceiveBufferSize(size);
   }
 
- private:
-
-  int ClampUDPBufferSize(int requested_buffer_size) {
-    constexpr int kMinBufferSize = 0;
-    constexpr int kMaxBufferSize = 128 * 1024;
-    return base::ClampToRange(requested_buffer_size, kMinBufferSize,
-        kMaxBufferSize);
+  int UDPStreamSocket::SetSendBufferSize(int32_t size) {
+    return socket_.SetSendBufferSize(size);
   }
 }  // namespace network

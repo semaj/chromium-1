@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "dtls_client_socket_impl.h"
 #include "udp_stream_socket.h"
 
 #include "base/component_export.h"
@@ -42,6 +41,7 @@
 #include "net/cert/x509_util.h"
 #include "net/cert/cert_verify_proc.h"
 #include "net/socket/stream_socket.h"
+#include "net/socket/dtls_client_socket_impl.h"
 
 class GURL;
 

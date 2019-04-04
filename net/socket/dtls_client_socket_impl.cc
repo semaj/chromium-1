@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "net/socket/ssl_client_socket_impl.h"
+#include "net/socket/dtls_client_socket_impl.h"
 
 #include <errno.h>
 #include <string.h>
@@ -805,7 +805,7 @@ int DTLSClientSocketImpl::Init() {
   }
   // Set handshake timeout to something
 #ifdef OPENSSL_IS_BORINGSSL
-  DTLSv1_set_initial_timeout_duration(ssl_.get(), dtls_handshake_timeout_ms_);
+  DTLSv1_set_initial_timeout_duration(ssl_.get(), 100);
 #else
   SSL_set_read_ahead(ssl_.get(), 1);
 #endif
@@ -824,7 +824,7 @@ int DTLSClientSocketImpl::Init() {
   DCHECK_LT(SSL3_VERSION, ssl_config_.version_min);
   DCHECK_LT(SSL3_VERSION, ssl_config_.version_max);
   // DTLS version
-  if (!SSL_set_min_proto_version(ssl_.get(), DTLS1_2_VERSION))
+  if (!SSL_set_min_proto_version(ssl_.get(), DTLS1_2_VERSION)) {
     return ERR_UNEXPECTED;
   }
 

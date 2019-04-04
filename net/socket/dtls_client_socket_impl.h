@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SERVICES_NETWORK_DTLS_CLIENT_SOCKET_IMPL_H
-#define SERVICES_NETWORK_DTLS_CLIENT_SOCKET_IMPL_H
+#ifndef NET_SOCKET_DTLS_CLIENT_SOCKET_IMPL_H
+#define NET_SOCKET_DTLS_CLIENT_SOCKET_IMPL_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -313,4 +313,4 @@ class DTLSClientSocketImpl : public SSLClientSocket,
 
 }  // namespace net
 
-#endif  // SERVICES_NETWORK_DTLS_CLIENT_SOCKET_IMPL_H
+#endif  // NET_SOCKET_DTLS_CLIENT_SOCKET_IMPL_H
