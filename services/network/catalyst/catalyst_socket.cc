@@ -221,7 +221,6 @@ void CatalystSocket::OnConnect(int result) {
 }
 
 void CatalystSocket::Connect(mojom::CatalystSocketClientPtr client) {
-
   client_ = std::move(client);
   DVLOG(1) << "Attempting to resolve host: " << origin_.GetURL();
   auto host_port = net::HostPortPair::FromURL(origin_.GetURL());

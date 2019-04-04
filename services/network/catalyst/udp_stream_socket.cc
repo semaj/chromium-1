@@ -36,7 +36,9 @@ namespace network {
     : socket_(bind_type, net_log, source),
     dest_addr_(remote_addr),
     is_connected_(false),
-    was_ever_used_(false){}
+    was_ever_used_(false){
+      LOG(INFO) << "Create UDPStreamSocket";
+    }
 
   UDPStreamSocket::~UDPStreamSocket() {}
 
@@ -45,6 +47,7 @@ namespace network {
   //}
 
   int UDPStreamSocket::Connect(net::CompletionOnceCallback callback){
+    LOG(INFO) << "Start connect";
     int result = socket_.Open(dest_addr_.GetFamily());
     socket_.SetReceiveBufferSize(kMaxReadSize);
     socket_.SetSendBufferSize(kMaxReadSize);

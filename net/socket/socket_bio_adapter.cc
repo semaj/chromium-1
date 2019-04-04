@@ -385,8 +385,14 @@ long SocketBIOAdapter::BIOCtrlWrapper(BIO* bio,
     case BIO_CTRL_FLUSH:
       // The SSL stack requires BIOs handle BIO_flush.
       return 1;
+    //case BIO_CTRL_DGRAM_SET_MTU:
+      //return 1;
+    case BIO_CTRL_DGRAM_QUERY_MTU:
+      // https://groups.google.com/a/chromium.org/forum/#!topic/proto-quic/uKWLRh9JPCo
+      return 1392;
   }
 
+  LOG(ERROR) << "Weird " << cmd;
   NOTIMPLEMENTED();
   return 0;
 }
