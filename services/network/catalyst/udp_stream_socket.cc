@@ -40,11 +40,34 @@ namespace network {
       LOG(INFO) << "Create UDPStreamSocket";
     }
 
-  UDPStreamSocket::~UDPStreamSocket() {}
+  UDPStreamSocket::~UDPStreamSocket() { }
 
-  //void UDPStreamSocket::SetBeforeConnectCallback(const BeforeCallback& before_connect_callback) {
-    //before_connect_callback_ = before_connect_callback;
-  //}
+  //Always synchronous!
+  int UDPStreamSocket::ConnectSync() {
+    LOG(INFO) << "Start connectsync";
+    int result = socket_.Open(dest_addr_.GetFamily());
+    //if (result == net::OK) {
+      //result = socket_.SetReceiveBufferSize(kMaxReadSize);
+      //LOG(INFO) << "Done set recv size";
+    //}
+    //if (result == net::OK) {
+      //result = socket_.SetSendBufferSize(kMaxReadSize);
+      //LOG(INFO) << "Done set send size";
+    //}
+    if (result == net::OK) {
+      LOG(INFO) << "Start connect";
+      result = socket_.Connect(dest_addr_);
+      LOG(INFO) << "Done connect";
+    } 
+    if (result != net::OK) {
+      socket_.Close();
+      LOG(INFO) << "Failure " << result;
+    } else {
+      is_connected_ = true;
+      LOG(INFO) << "Successfully connected";
+    }
+    return result;
+  }
 
   int UDPStreamSocket::Connect(net::CompletionOnceCallback callback){
     LOG(INFO) << "Start connect";
@@ -65,6 +88,7 @@ namespace network {
     } else {
       is_connected_ = true;
     }
+    LOG(INFO) << "Done connect " << is_connected_;
     return result;
   }
 

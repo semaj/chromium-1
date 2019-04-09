@@ -28,6 +28,7 @@
 #include "net/socket/socket_bio_adapter.h"
 #include "net/socket/ssl_client_socket.h"
 #include "net/socket/stream_socket.h"
+#include "services/network/catalyst/udp_stream_socket.h"
 #include "net/ssl/openssl_ssl_util.h"
 #include "net/ssl/ssl_client_cert_type.h"
 #include "net/ssl/ssl_config.h"
@@ -54,7 +55,7 @@ class DTLSClientSocketImpl : public SSLClientSocket,
   // The given hostname will be compared with the name(s) in the server's
   // certificate during the SSL handshake.  |ssl_config| specifies the SSL
   // settings.
-  DTLSClientSocketImpl(std::unique_ptr<StreamSocket> nested_socket,
+  DTLSClientSocketImpl(std::unique_ptr<network::UDPStreamSocket> nested_socket,
                       const HostPortPair& host_and_port,
                       const SSLConfig& ssl_config,
                       const SSLClientSocketContext& context);
@@ -73,6 +74,7 @@ class DTLSClientSocketImpl : public SSLClientSocket,
                            unsigned char* out,
                            unsigned int outlen) override;
 
+  int ConnectSSL(CompletionOnceCallback callback);
   // StreamSocket implementation.
   int Connect(CompletionOnceCallback callback) override;
   void Disconnect() override;
@@ -259,10 +261,10 @@ class DTLSClientSocketImpl : public SSLClientSocket,
   bssl::UniquePtr<SSL> ssl_;
 
   std::unique_ptr<ClientSocketHandle> client_socket_handle_;
-  std::unique_ptr<StreamSocket> nested_socket_;
+  //std::unique_ptr<StreamSocket> nested_socket_;
   // Either |nested_socket_| or the socket owned by |client_socket_handle_|,
   // depending on constructor used.
-  StreamSocket* stream_socket_;
+  std::unique_ptr<network::UDPStreamSocket> stream_socket_;
   std::unique_ptr<SocketBIOAdapter> transport_adapter_;
   const HostPortPair host_and_port_;
   SSLConfig ssl_config_;

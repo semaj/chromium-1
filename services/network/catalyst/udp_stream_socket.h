@@ -58,6 +58,7 @@ namespace network {
       // StreamSocket
       //void SetBeforeConnectCallback(
           //const BeforeConnectCallback& before_connect_callback) override;
+      int ConnectSync();
       int Connect(net::CompletionOnceCallback callback) override;
       void Disconnect() override;
       bool IsConnected() const override;
@@ -92,6 +93,7 @@ namespace network {
       //BeforeConnectCallback& before_connect_callback_;
       bool is_connected_;
       bool was_ever_used_;
+      DISALLOW_COPY_AND_ASSIGN(UDPStreamSocket);
   };
 }  // namespace network
 

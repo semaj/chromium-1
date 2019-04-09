@@ -179,16 +179,16 @@ void CatalystSocket::DoRecv() {
 }
 
 void CatalystSocket::OnResolveComplete(int rv) {
-  DVLOG(1) << "Starting OnResolveComplete: " << rv;
+  LOG(INFO) << "Starting OnResolveComplete: " << rv;
   DCHECK(resolve_request_);
   auto results = resolve_request_->GetAddressResults();
-  DVLOG(1) << "Got results";
+  LOG(INFO) << "Got results";
   DCHECK(results);
   if (results.value().empty()) {
     // some error
-    DVLOG(1) << "Resolution returned nothing!";
+    LOG(INFO) << "Resolution returned nothing!";
   } 
-  DVLOG(1) << "Looking at front";
+  LOG(INFO) << "Looking at front";
   // Choose the first result, unless there's an IPV4 address
   net::IPEndPoint ip_endpoint = results.value().front();
   for (auto pr = results.value().begin(); pr < results.value().end(); pr++){
@@ -198,15 +198,13 @@ void CatalystSocket::OnResolveComplete(int rv) {
     }
   }
   //DVLOG(1) << "Resolution: " << ip_endpoint;
-  DVLOG(1) << "Resolved to: " << ip_endpoint.ToString();
+  LOG(INFO) << "Resolved to: " << ip_endpoint.ToString();
   DCHECK(!wrapped_socket_);
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
   int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
   
   if (result != net::ERR_IO_PENDING) {
     OnConnect(result);
-  } else if (result != net::OK) {
-    wrapped_socket_.reset();
   }
 }
 
@@ -222,10 +220,10 @@ void CatalystSocket::OnConnect(int result) {
 
 void CatalystSocket::Connect(mojom::CatalystSocketClientPtr client) {
   client_ = std::move(client);
-  DVLOG(1) << "Attempting to resolve host: " << origin_.GetURL();
+  LOG(INFO) << "Attempting to resolve host: " << origin_.GetURL();
   auto host_port = net::HostPortPair::FromURL(origin_.GetURL());
   resolve_request_ = resolver_->CreateRequest(host_port, net::NetLogWithSource(), base::nullopt);
-  DVLOG(1) << "Starting resolution";
+  LOG(INFO) << "Starting resolution";
   int net_result = resolve_request_->Start(
       base::BindOnce(&CatalystSocket::OnResolveComplete, 
                      base::Unretained(this)));
@@ -254,8 +252,8 @@ std::unique_ptr<net::DTLSClientSocketImpl> CatalystSocket::CreateSocketWrapper(n
        delegate_->GetURLRequestContext()->cert_transparency_verifier(),
        delegate_->GetURLRequestContext()->ct_policy_enforcer(),
        nullptr /* Disables SSL session caching */);
-
-  return std::make_unique<net::DTLSClientSocketImpl>(std::make_unique<UDPStreamSocket>(net::DatagramSocket::RANDOM_BIND, nullptr, net::NetLogSource(), remote_addr), net::HostPortPair::FromIPEndPoint(remote_addr), ssl_config, ssl_context);
+  std::unique_ptr<UDPStreamSocket> stream_socket = std::make_unique<UDPStreamSocket>(net::DatagramSocket::RANDOM_BIND, nullptr, net::NetLogSource(), remote_addr);
+  return std::make_unique<net::DTLSClientSocketImpl>(std::move(stream_socket), net::HostPortPair::FromIPEndPoint(remote_addr), ssl_config, ssl_context);
 
 }
 

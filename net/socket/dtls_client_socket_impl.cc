@@ -404,7 +404,7 @@ const SSL_PRIVATE_KEY_METHOD
 };
 
 DTLSClientSocketImpl::DTLSClientSocketImpl(
-    std::unique_ptr<StreamSocket> nested_socket,
+    std::unique_ptr<network::UDPStreamSocket> nested_socket,
     const HostPortPair& host_and_port,
     const SSLConfig& ssl_config,
     const SSLClientSocketContext& context)
@@ -415,8 +415,7 @@ DTLSClientSocketImpl::DTLSClientSocketImpl(
       cert_verifier_(context.cert_verifier),
       cert_verification_result_(kCertVerifyPending),
       cert_transparency_verifier_(context.cert_transparency_verifier),
-      nested_socket_(std::move(nested_socket)),
-      stream_socket_(nested_socket_.get()),
+      stream_socket_(std::move(nested_socket)),
       host_and_port_(host_and_port),
       ssl_config_(ssl_config),
       ssl_client_session_cache_(context.ssl_client_session_cache),
@@ -477,6 +476,13 @@ int DTLSClientSocketImpl::Connect(CompletionOnceCallback callback) {
   // https://crbug.com/499289.
   CHECK(!disconnected_);
 
+  int result = stream_socket_->ConnectSync();
+  // always synchronous in our case
+  if (result != OK) {
+    return result;
+  }
+
+
   net_log_.BeginEvent(NetLogEventType::SSL_CONNECT);
 
   // Set up new ssl object.
@@ -490,6 +496,7 @@ int DTLSClientSocketImpl::Connect(CompletionOnceCallback callback) {
   SSL_set_connect_state(ssl_.get());
 
   next_handshake_state_ = STATE_HANDSHAKE;
+  LOG(INFO) << "Start handshake loop";
   rv = DoHandshakeLoop(OK);
   if (rv == ERR_IO_PENDING) {
     user_connect_callback_ = std::move(callback);
@@ -811,7 +818,7 @@ int DTLSClientSocketImpl::Init() {
 #endif
 
   transport_adapter_.reset(
-      new SocketBIOAdapter(stream_socket_, kDefaultOpenSSLBufferSize,
+      new SocketBIOAdapter(stream_socket_.get(), kDefaultOpenSSLBufferSize,
                            kDefaultOpenSSLBufferSize, this));
   BIO* transport_bio = transport_adapter_->bio();
 
