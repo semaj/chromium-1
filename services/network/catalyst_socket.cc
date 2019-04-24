@@ -49,22 +49,23 @@ class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
 
     if (result != net::OK)
       socket_.Close();
-    socket_.SetReceiveBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
+    //socket_.SetReceiveBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
     //socket_.SetSendBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
-    DVLOG(1) << "Wrapped socket Successfully connected";
+    LOG(INFO) << "Wrapped socket Successfully connected";
     return result;
   }
   int Send(
       net::IOBuffer* buf,
       int buf_len,
       net::CompletionOnceCallback callback) override {
-    DVLOG(1) << "Wrapped socket trying SendTo";
+    //LOG(INFO) << "Wrapped socket trying SendTo";
+    LOG(INFO) << "SEND SIZE " << buf_len;
     return socket_.Write(buf, buf_len, std::move(callback));
   }
   int Recv(net::IOBuffer* buf,
                int buf_len,
                net::CompletionOnceCallback callback) override {
-    return socket_.RecvFrom(buf, buf_len, &dest_addr_, std::move(callback));
+    return socket_.Read(buf, 65500, std::move(callback));
   }
 
  private:
@@ -153,32 +154,32 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     // This is guaranteed by the maximum size enforced on mojo messages.
     DCHECK_LE(data.size(), static_cast<size_t>(INT_MAX));
 
-    DVLOG(1) << "First byte: " << data[0];
+    //LOG(INFO) << "First byte: " << data[0];
     // TODO(darin): Avoid this copy.
     net::IOBuffer *data_to_pass = new net::IOBuffer(data.size());
     std::copy(data.begin(), data.end(), data_to_pass->data());
-    DVLOG(1) << "Trying send.";
+    //LOG(INFO) << "Trying send.";
     int net_result = wrapped_socket_->Send(
         std::move(data_to_pass), data.size(),
         base::BindOnce(&CatalystSocket::OnSendComplete, 
                        weak_ptr_factory_.GetWeakPtr()));
     if (net_result != net::ERR_IO_PENDING) {
-      DVLOG(1) << "Executing send: " << net_result;
+      //LOG(INFO) << "Executing send: " << net_result;
       OnSendComplete(net_result);
     } else {
-      DVLOG(1) << "Send was queued.";
+      //LOG(INFO) << "Send was queued.";
     }
   } else {
-    DVLOG(1) << "Trying to send while not connected.";
+    //LOG(INFO) << "Trying to send while not connected.";
   }
 }
 
 void CatalystSocket::OnValidationComplete(IsCertificateValidCallback callback, int rv) {
   if (rv >= 0) {
-    DVLOG(1) << "Validation successful";
+    //LOG(INFO) << "Validation successful";
     std::move(callback).Run(true);
   } else {
-    DVLOG(1) << "Validation UNsuccessful";
+    //LOG(INFO) << "Validation UNsuccessful";
     std::move(callback).Run(false);
   }
 }
@@ -211,19 +212,19 @@ void CatalystSocket::IsCertificateValid(const std::string& cert_chain,
   if (rv != net::ERR_IO_PENDING) {
     OnValidationComplete(std::move(callback), rv);
   } else {
-    DVLOG(1) << "Validation queued";
+    //LOG(INFO) << "Validation queued";
   }
 }
 
 void CatalystSocket::OnRecvComplete(int rv) {
   if (rv >= 0) {
-    DVLOG(1) << "Recv successful complete";
+    //LOG(INFO) << "Recv successful complete";
     std::vector<uint8_t> vec(rv);
     std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+rv, vec.begin());
     client_->OnDataFrame(vec);
     DoRecv();
   } else {
-    DVLOG(1) << "Recv UNsuccessful complete";
+    //LOG(INFO) << "Recv UNsuccessful complete";
     OnError();
   }
 }
@@ -231,28 +232,28 @@ void CatalystSocket::OnRecvComplete(int rv) {
 void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
       base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(CatalystSocket::kMaxReadSize));
-  DVLOG(1) << "Starting DoRecv";
+  //LOG(INFO) << "Starting DoRecv";
   int net_result = wrapped_socket_->Recv(
       recvfrom_buffer_.get(), CatalystSocket::kMaxReadSize, 
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING) {
-    DVLOG(1) << "Recv queued";
+    //LOG(INFO) << "Recv queued";
     OnRecvComplete(net_result);
   }
 }
 
 void CatalystSocket::OnResolveComplete(int rv) {
-  DVLOG(1) << "Starting OnResolveComplete: " << rv;
+  //LOG(INFO) << "Starting OnResolveComplete: " << rv;
   DCHECK(resolve_request_);
   auto results = resolve_request_->GetAddressResults();
-  DVLOG(1) << "Got results";
+  //LOG(INFO) << "Got results";
   DCHECK(results);
   if (results.value().empty()) {
     // some error
-    DVLOG(1) << "Resolution returned nothing!";
+    //LOG(INFO) << "Resolution returned nothing!";
   } 
-  DVLOG(1) << "Looking at front";
+  //LOG(INFO) << "Looking at front";
   // Choose the first result, unless there's an IPV4 address
   net::IPEndPoint ip_endpoint = results.value().front();
   for (auto pr = results.value().begin(); pr < results.value().end(); pr++){
@@ -261,8 +262,8 @@ void CatalystSocket::OnResolveComplete(int rv) {
       break;
     }
   }
-  //DVLOG(1) << "Resolution: " << ip_endpoint;
-  DVLOG(1) << "Resolved to: " << ip_endpoint.ToString();
+  //LOG(INFO) << "Resolution: " << ip_endpoint;
+  LOG(INFO) << "Resolved to: " << ip_endpoint.ToString();
   DCHECK(!wrapped_socket_);
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
   net::IPEndPoint local_addr_out;
@@ -279,10 +280,10 @@ void CatalystSocket::OnResolveComplete(int rv) {
 void CatalystSocket::Connect(mojom::CatalystSocketClientPtr client) {
 
   client_ = std::move(client);
-  DVLOG(1) << "Attempting to resolve host: " << origin_.GetURL();
+  LOG(INFO) << "Attempting to resolve host: " << origin_.GetURL();
   auto host_port = net::HostPortPair::FromURL(origin_.GetURL());
   resolve_request_ = resolver_->CreateRequest(host_port, net::NetLogWithSource(), base::nullopt);
-  DVLOG(1) << "Starting resolution";
+  LOG(INFO) << "Starting resolution";
   int net_result = resolve_request_->Start(
       base::BindOnce(&CatalystSocket::OnResolveComplete, 
                      base::Unretained(this)));
