@@ -801,6 +801,7 @@ void UDPSocketPosix::LogWrite(int result,
 int UDPSocketPosix::InternalRecvFrom(IOBuffer* buf,
                                      int buf_len,
                                      IPEndPoint* address) {
+  //LOG(INFO) << "Internal recving from!";
   // If the socket is connected and the remote address is known
   // use the more efficient method that uses read() instead of recvmsg().
   if (experimental_recv_optimization_enabled_ && is_connected_ &&
@@ -878,6 +879,7 @@ int UDPSocketPosix::InternalRecvFromNonConnectedSocket(IOBuffer* buf,
 int UDPSocketPosix::InternalSendTo(IOBuffer* buf,
                                    int buf_len,
                                    const IPEndPoint* address) {
+  //LOG(INFO) << "Internal sending to!";
   SockaddrStorage storage;
   struct sockaddr* addr = storage.addr;
   if (!address) {
@@ -891,11 +893,11 @@ int UDPSocketPosix::InternalSendTo(IOBuffer* buf,
     }
   }
 
-  DVLOG(1) << "SENDTO: " << buf->data()[0];
+  LOG(INFO) << "SENDTO: " << buf->data()[0];
   int result = HANDLE_EINTR(sendto(socket_, buf->data(), buf_len, sendto_flags_,
                                    addr, storage.addr_len));
 
-  DVLOG(1) << "FINISHED SENDTO: " << strerror(errno);
+  LOG(INFO) << "FINISHED SENDTO: " << strerror(errno);
   if (result < 0)
     result = MapSystemError(errno);
   if (result != ERR_IO_PENDING)

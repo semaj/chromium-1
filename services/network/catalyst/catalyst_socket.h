@@ -74,9 +74,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
         mojom::CatalystSocketRequest request,
         int child_id,
         int frame_id,
-        url::Origin origin
-        //base::TimeDelta delay
-        );
+        url::Origin origin);
     ~CatalystSocket() override;
 
     // The renderer process is going away.
@@ -90,6 +88,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void IsCertificateValid(const std::string& cert_chain,
                             IsCertificateValidCallback callback) override;
 
+    void ThrottledSendFrame(const std::vector<uint8_t>& data, int net_result);
     static const uint32_t kMaxReadSize = 64 * 1024;
     // The limit on data length for a UDP packet is 65,507 for IPv4 and 65,535 for
     // IPv6.
@@ -130,6 +129,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
 
     // The web origin to use for the CatalystSocket.
     const url::Origin origin_;
+
+    base::LazyInstance<CatalystSocketThrottler>::Leaky throttler_ = LAZY_INSTANCE_INITIALIZER;
 
     base::WeakPtrFactory<CatalystSocket> weak_ptr_factory_;
 

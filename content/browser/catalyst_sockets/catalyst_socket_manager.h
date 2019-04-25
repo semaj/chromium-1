@@ -65,8 +65,7 @@ class CONTENT_EXPORT CatalystSocketManager
       network::mojom::CatalystSocketRequest request,
       int child_id,
       int frame_id,
-      url::Origin origin,
-      base::TimeDelta delay);
+      url::Origin origin);
 
   net::URLRequestContext* GetURLRequestContext();
   //virtual void OnLostConnectionToClient(network::CatalystSocket* impl);
@@ -81,8 +80,6 @@ class CONTENT_EXPORT CatalystSocketManager
 
   // Timer and counters for per-renderer CatalystSocket throttling.
   base::RepeatingTimer throttling_period_timer_;
-
-  network::CatalystSocketPerProcessThrottler throttler_;
 
   bool context_destroyed_;
 

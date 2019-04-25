@@ -35,9 +35,7 @@ CatalystSocket::CatalystSocket(
     mojom::CatalystSocketRequest request,
     int child_id,
     int frame_id,
-    url::Origin origin
-    //base::TimeDelta delay)
-    )
+    url::Origin origin)
     : delegate_(std::move(delegate)),
       binding_(this, std::move(request)),
       //delay_(delay),
@@ -77,11 +75,8 @@ void CatalystSocket::OnSendComplete(int rv) {
   }
 }
 
-void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
-  if (is_connected_) {
-    // This is guaranteed by the maximum size enforced on mojo messages.
-    DCHECK_LE(data.size(), static_cast<size_t>(INT_MAX));
-
+void CatalystSocket::ThrottledSendFrame(const std::vector<uint8_t>& data, int net_result) {
+  if (net_result == net::OK) {
     DVLOG(1) << "First byte: " << data[0];
     // TODO(darin): Avoid this copy.
     net::IOBuffer *data_to_pass = new net::IOBuffer(data.size());
@@ -104,6 +99,15 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     } else {
       DVLOG(1) << "Send was queued.";
     }
+  }
+}
+
+void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
+  if (is_connected_) {
+    // This is guaranteed by the maximum size enforced on mojo messages.
+    DCHECK_LE(data.size(), static_cast<size_t>(INT_MAX));
+    int result = throttler_.Get().TryCanSend(origin_, base::BindOnce(&CatalystSocket::ThrottledSendFrame, weak_ptr_factory_.GetWeakPtr(), data));
+    ThrottledSendFrame(data, result);
   } else {
     DVLOG(1) << "Trying to send while not connected.";
   }
@@ -171,7 +175,7 @@ void CatalystSocket::DoRecv() {
   int net_result = wrapped_socket_->Read(
       recvfrom_buffer_.get(), CatalystSocket::kMaxReadSize, 
       base::BindOnce(&CatalystSocket::OnRecvComplete,
-        base::Unretained(this)));
+        weak_ptr_factory_.GetWeakPtr()));
   if (net_result != net::ERR_IO_PENDING) {
     DVLOG(1) << "Recv queued";
     OnRecvComplete(net_result);
@@ -201,7 +205,7 @@ void CatalystSocket::OnResolveComplete(int rv) {
   LOG(INFO) << "Resolved to: " << ip_endpoint.ToString();
   DCHECK(!wrapped_socket_);
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
-  int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
+  int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, weak_ptr_factory_.GetWeakPtr()));
   
   if (result != net::ERR_IO_PENDING) {
     OnConnect(result);
@@ -226,7 +230,7 @@ void CatalystSocket::Connect(mojom::CatalystSocketClientPtr client) {
   LOG(INFO) << "Starting resolution";
   int net_result = resolve_request_->Start(
       base::BindOnce(&CatalystSocket::OnResolveComplete, 
-                     base::Unretained(this)));
+                     weak_ptr_factory_.GetWeakPtr()));
   if (net_result != net::ERR_IO_PENDING)
     OnResolveComplete(net_result);
 }

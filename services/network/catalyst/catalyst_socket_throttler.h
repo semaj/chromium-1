@@ -13,126 +13,45 @@
 #include "base/memory/weak_ptr.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
+#include "net/base/completion_callback.h"
 
 namespace network {
 
-// CatalystSocketPerProcessThrottler provies a throttling functionality per
-// renderer process. See https://goo.gl/tldFNn.
-class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocketPerProcessThrottler final {
- public:
-  // A PendingConnection represents a connection that has not finished a
-  // handshake.
-  //
-  // Destroying a PendingConnection whose OnCompleteHandshake has not been
-  // called represents a handshake failure (including going away during
-  // handshake).
-  //class COMPONENT_EXPORT(NETWORK_SERVICE) PendingConnection final {
-   //public:
-    //// |throttler| cannot be null.
-    //explicit PendingConnection(
-        //base::WeakPtr<CatalystSocketPerProcessThrottler> throttler);
-    //PendingConnection(PendingConnection&& other);
-    //~PendingConnection();
+  class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocketPerOriginThrottler final {
+    public:
 
-    //// Called when the hansdhake finishes sucessfully.
-    //void OnCompleteHandshake();
+      CatalystSocketPerOriginThrottler();
+      ~CatalystSocketPerOriginThrottler();
 
-   //private:
-    //base::WeakPtr<CatalystSocketPerProcessThrottler> throttler_;
+      int TryCanSend(net::CompletionOnceCallback);
 
-    //DISALLOW_COPY_AND_ASSIGN(PendingConnection);
-  //};
+    private:
+      void OnTimer();
 
-  CatalystSocketPerProcessThrottler();
-  ~CatalystSocketPerProcessThrottler();
+      // I don't think this synchronization is necessary, since we're in an async, single-threaded event loop
+      std::atomic_int64_t tokens_;
+      //std::mutex mut_;
+      std::queue<net::CompletionOnceCallback> cbs_;
+      base::RepeatingTimer timer_;
+      base::WeakPtrFactory<CatalystSocketPerOriginThrottler> weak_factory_;
 
-  // Returns if there are too many pending connections.
-  //bool HasTooManyPendingConnections() const {
-    //return num_pending_connections_ >= kMaxPendingCatalystSocketConnections;
-  //}
+      DISALLOW_COPY_AND_ASSIGN(CatalystSocketPerOriginThrottler);
+  };
 
-  // Returns the delay which should be used to throttle opening catalyst_socket
-  // connections.
-  base::TimeDelta CalculateDelay() const;
+  class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocketThrottler final {
+    public:
 
-  // Issues an object which represents a pending connection.
-  //PendingConnection IssuePendingConnectionTracker();
+      CatalystSocketThrottler();
+      ~CatalystSocketThrottler();
 
-  // Returns true if this throttler is clean, i.e., we can restore the internal
-  // state by simply creating a new object.
-  bool IsClean() const;
+      int TryCanSend(url::Origin origin, net::CompletionOnceCallback);
 
-  // Copies the succeeded / failed counters for the current period to the
-  // ones for the previous period, and zeroes them.
-  void Roll();
+    private:
 
-  //int64_t num_pending_connections() const { return num_pending_connections_; }
-  int64_t num_current_succeeded_connections() const {
-    return num_current_succeeded_connections_;
-  }
-  int64_t num_previous_succeeded_connections() const {
-    return num_previous_succeeded_connections_;
-  }
-  int64_t num_current_failed_connections() const {
-    return num_current_failed_connections_;
-  }
-  int64_t num_previous_failed_connections() const {
-    return num_previous_failed_connections_;
-  }
+      std::map<url::Origin, std::unique_ptr<CatalystSocketPerOriginThrottler>> per_origin_throttlers_;
 
- private:
-  // The current number of pending connections.
-  //int num_pending_connections_ = 0;
-
-  // The number of handshakes that failed in the clurrent and previous time
-  // period.
-  int64_t num_current_succeeded_connections_ = 0;
-  int64_t num_previous_succeeded_connections_ = 0;
-
-  // The number of handshakes that succeeded in the current and previous time
-  // period.
-  int64_t num_current_failed_connections_ = 0;
-  int64_t num_previous_failed_connections_ = 0;
-
-  //static constexpr int kMaxPendingCatalystSocketConnections = 255;
-
-  base::WeakPtrFactory<CatalystSocketPerProcessThrottler> weak_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(CatalystSocketPerProcessThrottler);
-};
-
-// This class is for throttling CatalystSocket connections. CatalystSocketThrottler is
-// a set of per-renderer throttlers.
-// This class is only used in the network service. content::CatalystSocketManager
-// uses CatalystSocketPerProcessThrottler directly.
-class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocketThrottler final {
- public:
-  //using PendingConnection = CatalystSocketPerProcessThrottler::PendingConnection;
-
-  CatalystSocketThrottler();
-  ~CatalystSocketThrottler();
-
-  // Returns true if there are too many pending connections for |process_id|.
-  //bool HasTooManyPendingConnections(int process_id) const;
-
-  // Calculates connection delay for |process_id|.
-  base::TimeDelta CalculateDelay(int process_id) const;
-
-  // Returns a pending connection for |process_id|. This function can be called
-  // only when |HasTooManyPendingConnections(process_id)| is false.
-  //PendingConnection IssuePendingConnectionTracker(int process_id);
-
-  size_t GetSizeForTesting() const { return per_process_throttlers_.size(); }
-
- private:
-  void OnTimer();
-
-  std::map<int, std::unique_ptr<CatalystSocketPerProcessThrottler>>
-      per_process_throttlers_;
-  base::RepeatingTimer throttling_period_timer_;
-
-  DISALLOW_COPY_AND_ASSIGN(CatalystSocketThrottler);
-};
+      DISALLOW_COPY_AND_ASSIGN(CatalystSocketThrottler);
+  };
 
 }  // namespace network
 

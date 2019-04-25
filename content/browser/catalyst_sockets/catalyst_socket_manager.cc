@@ -231,22 +231,21 @@ void CatalystSocketManager::DoCreateCatalystSocket(
 
   impls_.insert(DoCreateCatalystSocketInternal(
       std::make_unique<Delegate>(this), std::move(request),
-      process_id_, frame_id,
-      std::move(origin), throttler_.CalculateDelay()));
+      process_id_, frame_id, std::move(origin)));
 
-  if (!throttling_period_timer_.IsRunning()) {
-    throttling_period_timer_.Start(
-        FROM_HERE,
-        base::TimeDelta::FromMinutes(2),
-        this,
-        &CatalystSocketManager::ThrottlingPeriodTimerCallback);
-  }
+  //if (!throttling_period_timer_.IsRunning()) {
+    //throttling_period_timer_.Start(
+        //FROM_HERE,
+        //base::TimeDelta::FromMinutes(2),
+        //this,
+        //&CatalystSocketManager::ThrottlingPeriodTimerCallback);
+  //}
 }
 
 void CatalystSocketManager::ThrottlingPeriodTimerCallback() {
-  throttler_.Roll();
-  if (throttler_.IsClean())
-    throttling_period_timer_.Stop();
+  //throttler_.Roll();
+  //if (throttler_.IsClean())
+    //throttling_period_timer_.Stop();
 }
 
 std::unique_ptr<network::CatalystSocket> CatalystSocketManager::DoCreateCatalystSocketInternal(
@@ -254,13 +253,11 @@ std::unique_ptr<network::CatalystSocket> CatalystSocketManager::DoCreateCatalyst
     network::mojom::CatalystSocketRequest request,
     int child_id,
     int frame_id,
-    url::Origin origin,
-    base::TimeDelta delay) {
+    url::Origin origin) {
   return std::make_unique<network::CatalystSocket>(
       std::move(delegate), std::move(request),
       child_id, frame_id,
       std::move(origin));
-      //delay);
 }
 
 net::URLRequestContext* CatalystSocketManager::GetURLRequestContext() {
