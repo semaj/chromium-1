@@ -86,7 +86,7 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     // TODO(darin): Avoid this copy.
     net::IOBuffer *data_to_pass = new net::IOBuffer(data.size());
     std::copy(data.begin(), data.end(), data_to_pass->data());
-    DVLOG(1) << "Trying send.";
+    LOG(INFO) << "Trying send " << data.size();
     const net::NetworkTrafficAnnotationTag bad_traffic_annotation =
       net::DefineNetworkTrafficAnnotation("bad", R"(
           trigger: "Chrome sends this when [obscure event that is not related to anything user-perceivable]."
@@ -166,10 +166,10 @@ void CatalystSocket::OnRecvComplete(int rv) {
 
 void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
-      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(CatalystSocket::kMaxReadSize));
+      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(65500));
   DVLOG(1) << "Starting DoRecv";
   int net_result = wrapped_socket_->Read(
-      recvfrom_buffer_.get(), CatalystSocket::kMaxReadSize, 
+      recvfrom_buffer_.get(), 65500, 
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING) {

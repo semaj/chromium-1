@@ -166,7 +166,7 @@ namespace network {
     if (!is_connected_) {
       return net::ERR_SOCKET_NOT_CONNECTED;
     }
-    return socket_.RecvFrom(buf, buf_len, &dest_addr_, std::move(callback));
+    return socket_.Read(buf, 65500, std::move(callback));
   }
 
   int UDPStreamSocket::SetReceiveBufferSize(int32_t size) {
