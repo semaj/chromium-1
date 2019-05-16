@@ -72,8 +72,8 @@ namespace network {
   int UDPStreamSocket::Connect(net::CompletionOnceCallback callback){
     LOG(INFO) << "Start connect";
     int result = socket_.Open(dest_addr_.GetFamily());
-    socket_.SetReceiveBufferSize(kMaxReadSize);
-    socket_.SetSendBufferSize(kMaxReadSize);
+    //socket_.SetReceiveBufferSize(kMaxReadSize);
+    //socket_.SetSendBufferSize(kMaxReadSize);
     if (result == net::OK) {
       //std::move(before_connect_callback_).Run(result);
       result = socket_.Connect(dest_addr_);

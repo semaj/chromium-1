@@ -72,7 +72,8 @@ void CatalystSocket::GoAway() {
 }
 
 void CatalystSocket::OnSendComplete(int rv) {
-  if (rv != net::OK) {
+  if (rv != net::OK && rv < 0) {
+    LOG(INFO) << "Send error " << rv;
     OnError();
   }
 }
