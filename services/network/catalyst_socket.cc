@@ -65,7 +65,7 @@ class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
   int Recv(net::IOBuffer* buf,
                int buf_len,
                net::CompletionOnceCallback callback) override {
-    return socket_.Read(buf, 65500, std::move(callback));
+    return socket_.Read(buf, buf_len, std::move(callback));
   }
 
  private:
@@ -231,10 +231,10 @@ void CatalystSocket::OnRecvComplete(int rv) {
 
 void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
-      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(CatalystSocket::kMaxReadSize));
+      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(65507));
   //LOG(INFO) << "Starting DoRecv";
   int net_result = wrapped_socket_->Recv(
-      recvfrom_buffer_.get(), CatalystSocket::kMaxReadSize, 
+      recvfrom_buffer_.get(), 65507,
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING) {
