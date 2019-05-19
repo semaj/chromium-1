@@ -167,10 +167,10 @@ void CatalystSocket::OnRecvComplete(int rv) {
 
 void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
-      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(65500));
+      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(65507));
   DVLOG(1) << "Starting DoRecv";
   int net_result = wrapped_socket_->Read(
-      recvfrom_buffer_.get(), 65500, 
+      recvfrom_buffer_.get(), 65507, 
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING) {
