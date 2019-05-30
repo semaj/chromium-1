@@ -47,11 +47,13 @@ class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
     if (result == net::OK)
       result = socket_.GetLocalAddress(local_addr_out);
 
-    if (result != net::OK)
+    if (result != net::OK) {
       socket_.Close();
+      return result;
+    }
+    LOG(INFO) << "Wrapped socket Successfully connected";
     //socket_.SetReceiveBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
     //socket_.SetSendBufferSize(ClampUDPBufferSize(CatalystSocket::kMaxReadSize));
-    LOG(INFO) << "Wrapped socket Successfully connected";
     return result;
   }
   int Send(
