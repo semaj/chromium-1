@@ -153,6 +153,10 @@ void CatalystSocket::IsCertificateValid(const std::string& cert_chain,
 }
 
 void CatalystSocket::OnRecvComplete(int rv) {
+  if (!wrapped_socket_) {
+    LOG(INFO) << "CatalystSocket closed before onrecv completed.";
+    return;
+  }
   if (rv >= 0) {
     DVLOG(1) << "Recv successful complete";
     std::vector<uint8_t> vec(rv);
@@ -167,10 +171,10 @@ void CatalystSocket::OnRecvComplete(int rv) {
 
 void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
-      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(65507));
+      base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(kMaxReadSize));
   DVLOG(1) << "Starting DoRecv";
   int net_result = wrapped_socket_->Read(
-      recvfrom_buffer_.get(), 65507, 
+      recvfrom_buffer_.get(), kMaxReadSize,
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING) {
@@ -180,6 +184,10 @@ void CatalystSocket::DoRecv() {
 }
 
 void CatalystSocket::OnResolveComplete(int rv) {
+  if (!wrapped_socket_) {
+    LOG(INFO) << "CatalystSocket closed before resolution completed.";
+    return;
+  }
   LOG(INFO) << "Starting OnResolveComplete: " << rv;
   DCHECK(resolve_request_);
   auto results = resolve_request_->GetAddressResults();
@@ -200,7 +208,6 @@ void CatalystSocket::OnResolveComplete(int rv) {
   }
   //DVLOG(1) << "Resolution: " << ip_endpoint;
   LOG(INFO) << "Resolved to: " << ip_endpoint.ToString();
-  DCHECK(!wrapped_socket_);
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
   int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
   
@@ -210,6 +217,10 @@ void CatalystSocket::OnResolveComplete(int rv) {
 }
 
 void CatalystSocket::OnConnect(int result) {
+  if (!wrapped_socket_) {
+    LOG(INFO) << "CatalystSocket closed before connect completed.";
+    return;
+  }
   if (result == net::OK) {
     is_connected_ = true;
     client_->OnConnect();

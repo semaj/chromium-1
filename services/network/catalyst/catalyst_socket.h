@@ -90,10 +90,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void IsCertificateValid(const std::string& cert_chain,
                             IsCertificateValidCallback callback) override;
 
-    static const uint32_t kMaxReadSize = 64 * 1024;
-    // The limit on data length for a UDP packet is 65,507 for IPv4 and 65,535 for
-    // IPv6.
-    static const uint32_t kMaxPacketSize = kMaxReadSize - 1;
+    static const uint32_t kMaxReadSize = 65507;
   protected:
 
     class CatalystSocketEventHandler;
