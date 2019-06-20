@@ -7,6 +7,8 @@
 #include <inttypes.h>
 #include <algorithm>
 #include <utility>
+#include <time.h>
+#include <chrono>
 
 #include "base/numerics/checked_math.h"
 #include "base/numerics/ranges.h"
@@ -30,14 +32,21 @@
 namespace network {
 namespace {
 
+
+using namespace std::chrono;
 class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
+
  public:
   CatalystSocketWrapperImpl(net::DatagramSocket::BindType bind_type,
                     net::NetLog* net_log,
                     const net::NetLogSource& source,
                     net::IPEndPoint& remote_addr)
       : socket_(bind_type, net_log, source),
-        dest_addr_(remote_addr){}
+        dest_addr_(remote_addr),
+        tokens_(4000),
+        refresh_time_(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count())
+  {}
+
   ~CatalystSocketWrapperImpl() override {}
 
   int Connect(net::IPEndPoint* local_addr_out) override {
@@ -61,8 +70,23 @@ class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
       int buf_len,
       net::CompletionOnceCallback callback) override {
     //LOG(INFO) << "Wrapped socket trying SendTo";
-    LOG(INFO) << "SEND SIZE " << buf_len;
-    return socket_.Write(buf, buf_len, std::move(callback));
+    long now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    long elapsed = (now - refresh_time_);
+    refresh_time_ = now;
+    tokens_ += elapsed * 500;
+    if (tokens_ > 4000) {
+      tokens_ = 4000;
+    }
+    LOG(INFO) << "Elapsed since last send " << elapsed;
+
+    //LOG(INFO) << "SEND SIZE " << buf_len;
+    if (buf_len < tokens_) {
+      tokens_ -= buf_len;
+      return socket_.Write(buf, buf_len, std::move(callback));
+    } else {
+      LOG(INFO) << "DROPPED";
+      return net::OK;
+    }
   }
   int Recv(net::IOBuffer* buf,
                int buf_len,
@@ -98,6 +122,8 @@ class CatalystSocketWrapperImpl : public CatalystSocket::SocketWrapper {
 
   net::UDPSocket socket_;
   net::IPEndPoint& dest_addr_;
+  int tokens_;
+  long refresh_time_;
 
   DISALLOW_COPY_AND_ASSIGN(CatalystSocketWrapperImpl);
 };
