@@ -85,9 +85,15 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
 
     DVLOG(1) << "First byte: " << data[0];
     // TODO(darin): Avoid this copy.
-    net::IOBuffer *data_to_pass = new net::IOBuffer(data.size());
-    std::copy(data.begin(), data.end(), data_to_pass->data());
+    int total_data_size = data.size() + kProbeSizeBytes;
+    net::IOBuffer *data_to_pass = new net::IOBuffer(total_data_size);
+    LOG(INFO) << "Sending ack " << last_seq_num_;
+    char * last_seq_num_byte_pointer_ = reinterpret_cast<char*>(&last_seq_num_);
+    std::copy(last_seq_num_byte_pointer_, last_seq_num_byte_pointer_+kProbeSizeBytes, data_to_pass->data());
+    std::copy(data.begin(), data.end(), data_to_pass->data()+kProbeSizeBytes);
+
     LOG(INFO) << "Trying send " << data.size();
+    last_seq_num_++;
     const net::NetworkTrafficAnnotationTag bad_traffic_annotation =
       net::DefineNetworkTrafficAnnotation("bad", R"(
           trigger: "Chrome sends this when [obscure event that is not related to anything user-perceivable]."
@@ -95,7 +101,7 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
           policy_exception_justification: "None."
           )");
     int net_result = wrapped_socket_->Write(
-        std::move(data_to_pass), data.size(),
+        std::move(data_to_pass), total_data_size,
         base::BindOnce(&CatalystSocket::OnSendComplete, 
                        weak_ptr_factory_.GetWeakPtr()),
         bad_traffic_annotation);
@@ -157,12 +163,19 @@ void CatalystSocket::OnRecvComplete(int rv) {
     LOG(INFO) << "CatalystSocket closed before onrecv completed.";
     return;
   }
-  if (rv >= 0) {
+  if (rv >= (int) kProbeSizeBytes) {
     DVLOG(1) << "Recv successful complete";
     std::vector<uint8_t> vec(rv);
-    std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+rv, vec.begin());
-    client_->OnDataFrame(vec);
-    DoRecv();
+    uint16_t ack_num_;
+    std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+kProbeSizeBytes, &ack_num_);
+    LOG(INFO) << "Received an ack " << ack_num_;
+    if (rv > (int) kProbeSizeBytes) {
+      std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
+      client_->OnDataFrame(vec);
+      DoRecv();
+    } else {
+      LOG(INFO) << "Just received an ack.";
+    }
   } else {
     DVLOG(1) << "Recv UNsuccessful complete";
     OnError();
@@ -184,10 +197,6 @@ void CatalystSocket::DoRecv() {
 }
 
 void CatalystSocket::OnResolveComplete(int rv) {
-  if (!wrapped_socket_) {
-    LOG(INFO) << "CatalystSocket closed before resolution completed.";
-    return;
-  }
   LOG(INFO) << "Starting OnResolveComplete: " << rv;
   DCHECK(resolve_request_);
   auto results = resolve_request_->GetAddressResults();

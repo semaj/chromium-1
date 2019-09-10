@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "udp_stream_socket.h"
 
@@ -90,7 +91,14 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void IsCertificateValid(const std::string& cert_chain,
                             IsCertificateValidCallback callback) override;
 
-    static const uint32_t kMaxReadSize = 65507;
+    static const uint32_t kMaxReadSize = 65535;
+
+    static const uint32_t kSegmentSize = 1460;
+    static const uint32_t kStartCwndSize = 10 * kSegmentSize;
+    static constexpr float kBeta = 0.6;
+    static constexpr float kAlpha = (3.0  * (kBeta / (2.0 - kBeta)));
+    static const uint32_t kNumRTTs = 12;
+    static const uint32_t kProbeSizeBytes = 2; 
   protected:
 
     class CatalystSocketEventHandler;
@@ -103,6 +111,15 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void OnError();
     void OnConnect(int rv);
     void OnValidationComplete(IsCertificateValidCallback callback, int rv);
+
+    void ProbeWrap(net::IOBuffer *buffer);
+    void ProbeUnwrap(net::IOBuffer *buffer);
+    void UpdateRTTs(std::chrono::milliseconds rtt);
+    int CwndAvailable();
+    void Loss(int num_losses);
+    void Ack();
+    std::chrono::milliseconds RTT();
+    std::chrono::milliseconds Timeout();
 
     scoped_refptr<net::IOBuffer> recvfrom_buffer_;
 
@@ -128,9 +145,16 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     // The web origin to use for the CatalystSocket.
     const url::Origin origin_;
 
+
+    float ssthresh_ = 65536 * 1.90;
+    int cwnd_size_;
+    int cwnd_used_;
+    uint16_t last_seq_num_ = 0;
+    std::map<std::uint16_t, std::chrono::steady_clock> unacked_;
+    std::chrono::milliseconds rtts_[kNumRTTs];
+    int rtt_index_ = 0;
+
     base::WeakPtrFactory<CatalystSocket> weak_ptr_factory_;
-
-
     DISALLOW_COPY_AND_ASSIGN(CatalystSocket);
   private:
     void OnRecvComplete(int rv);
