@@ -112,8 +112,6 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void OnConnect(int rv);
     void OnValidationComplete(IsCertificateValidCallback callback, int rv);
 
-    void ProbeWrap(net::IOBuffer *buffer);
-    void ProbeUnwrap(net::IOBuffer *buffer);
     void UpdateRTTs(std::chrono::milliseconds rtt);
     int CwndAvailable();
     void Loss(int num_losses);
@@ -150,7 +148,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     int cwnd_size_;
     int cwnd_used_;
     uint16_t last_seq_num_ = 0;
-    std::map<std::uint16_t, std::chrono::steady_clock> unacked_;
+    std::map<std::uint16_t, std::chrono::time_point<std::chrono::steady_clock>> unacked_sent_at_;
+    std::set<std::uint16_t> unacked_;
     std::chrono::milliseconds rtts_[kNumRTTs];
     int rtt_index_ = 0;
 

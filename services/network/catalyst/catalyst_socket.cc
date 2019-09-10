@@ -93,6 +93,8 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     std::copy(data.begin(), data.end(), data_to_pass->data()+kProbeSizeBytes);
 
     LOG(INFO) << "Trying send " << data.size();
+    unacked_sent_at_[last_seq_num_] = std::chrono::steady_clock::now();
+    unacked_.insert(last_seq_num_);
     last_seq_num_++;
     const net::NetworkTrafficAnnotationTag bad_traffic_annotation =
       net::DefineNetworkTrafficAnnotation("bad", R"(
@@ -158,6 +160,14 @@ void CatalystSocket::IsCertificateValid(const std::string& cert_chain,
   }
 }
 
+std::chrono::milliseconds CatalystSocket::RTT() {
+  std::chrono::milliseconds sum;
+  for (uint32_t i = 0; i < kNumRTTs; i++) {
+    sum += rtts_[i];
+  }
+  return sum;
+}
+
 void CatalystSocket::OnRecvComplete(int rv) {
   if (!wrapped_socket_) {
     LOG(INFO) << "CatalystSocket closed before onrecv completed.";
@@ -166,9 +176,24 @@ void CatalystSocket::OnRecvComplete(int rv) {
   if (rv >= (int) kProbeSizeBytes) {
     DVLOG(1) << "Recv successful complete";
     std::vector<uint8_t> vec(rv);
-    uint16_t ack_num_;
-    std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+kProbeSizeBytes, &ack_num_);
-    LOG(INFO) << "Received an ack " << ack_num_;
+    uint16_t ack_num;
+    std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+kProbeSizeBytes, &ack_num);
+
+    LOG(INFO) << "Received an ack " << ack_num;
+    if (unacked_.erase(ack_num) > 0) {
+      // UPDATE CWND
+    } else { // expired 
+      LOG(INFO) << "False loss " << ack_num;
+    }
+    auto received_time = std::chrono::steady_clock::now();
+    auto sent_time = unacked_sent_at_[ack_num];
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(received_time - sent_time);
+    rtts_[rtt_index_] = elapsed;
+    rtt_index_++;
+    rtt_index_ = rtt_index_ % kNumRTTs;
+    unacked_sent_at_.erase(ack_num);
+    LOG(INFO) << "RTT: " << RTT().count();
+
     if (rv > (int) kProbeSizeBytes) {
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
       client_->OnDataFrame(vec);
