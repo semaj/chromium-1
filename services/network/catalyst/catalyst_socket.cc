@@ -87,12 +87,13 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     // TODO(darin): Avoid this copy.
     int total_data_size = data.size() + kProbeSizeBytes;
     net::IOBuffer *data_to_pass = new net::IOBuffer(total_data_size);
-    LOG(INFO) << "Sending ack " << last_seq_num_;
-    char * last_seq_num_byte_pointer_ = reinterpret_cast<char*>(&last_seq_num_);
-    std::copy(last_seq_num_byte_pointer_, last_seq_num_byte_pointer_+kProbeSizeBytes, data_to_pass->data());
+    LOG(INFO) << "Sending probe " << last_seq_num_;
+    unsigned char * last_seq_num_byte_pointer_ = reinterpret_cast<unsigned char*>(&last_seq_num_);
+    std::copy(last_seq_num_byte_pointer_+1, last_seq_num_byte_pointer_+kProbeSizeBytes, data_to_pass->data());
+    std::copy(last_seq_num_byte_pointer_, last_seq_num_byte_pointer_+1, data_to_pass->data()+1);
     std::copy(data.begin(), data.end(), data_to_pass->data()+kProbeSizeBytes);
 
-    LOG(INFO) << "Trying send " << data.size();
+    LOG(INFO) << "Trying send message of size " << data.size();
     unacked_sent_at_[last_seq_num_] = std::chrono::steady_clock::now();
     unacked_.insert(last_seq_num_);
     last_seq_num_++;
@@ -174,11 +175,11 @@ void CatalystSocket::OnRecvComplete(int rv) {
     return;
   }
   if (rv >= (int) kProbeSizeBytes) {
-    DVLOG(1) << "Recv successful complete";
     std::vector<uint8_t> vec(rv);
     uint16_t ack_num;
-    std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+kProbeSizeBytes, &ack_num);
-
+    unsigned char * ack_num_pointer = reinterpret_cast<unsigned char*>(&ack_num);
+    std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+1, ack_num_pointer+1);
+    std::copy(recvfrom_buffer_->data()+1, recvfrom_buffer_->data()+kProbeSizeBytes, ack_num_pointer);
     LOG(INFO) << "Received an ack " << ack_num;
     if (unacked_.erase(ack_num) > 0) {
       // UPDATE CWND
@@ -202,7 +203,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
       LOG(INFO) << "Just received an ack.";
     }
   } else {
-    DVLOG(1) << "Recv UNsuccessful complete";
+    LOG(INFO) << "Recv UNsuccessful complete";
     OnError();
   }
 }
