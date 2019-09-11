@@ -50,6 +50,9 @@ CatalystSocket::CatalystSocket(
       weak_ptr_factory_(this) {
   binding_.set_connection_error_handler(
       base::BindOnce(&CatalystSocket::OnError, base::Unretained(this)));
+  for (uint64_t i = 0; i < kNumRTTs; i++) {
+    rtts_[i] = 0;
+  }
 }
 
 CatalystSocket::~CatalystSocket() {}
@@ -161,12 +164,13 @@ void CatalystSocket::IsCertificateValid(const std::string& cert_chain,
   }
 }
 
-std::chrono::milliseconds CatalystSocket::RTT() {
-  std::chrono::milliseconds sum;
-  for (uint32_t i = 0; i < kNumRTTs; i++) {
+// nanoseconds
+uint64_t CatalystSocket::RTT() {
+  uint64_t sum = 0;
+  for (uint64_t i = 0; i < kNumRTTs; i++) {
     sum += rtts_[i];
   }
-  return sum;
+  return sum / kNumRTTs;
 }
 
 void CatalystSocket::OnRecvComplete(int rv) {
@@ -188,12 +192,13 @@ void CatalystSocket::OnRecvComplete(int rv) {
     }
     auto received_time = std::chrono::steady_clock::now();
     auto sent_time = unacked_sent_at_[ack_num];
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(received_time - sent_time);
-    rtts_[rtt_index_] = elapsed;
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(received_time - sent_time);
+    LOG(INFO) << "Elapsed: " << elapsed.count();
+    rtts_[rtt_index_] = elapsed.count();
     rtt_index_++;
     rtt_index_ = rtt_index_ % kNumRTTs;
     unacked_sent_at_.erase(ack_num);
-    LOG(INFO) << "RTT: " << RTT().count();
+    LOG(INFO) << "RTT: " << RTT();
 
     if (rv > (int) kProbeSizeBytes) {
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());

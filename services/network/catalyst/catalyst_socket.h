@@ -97,7 +97,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     static const uint32_t kStartCwndSize = 10 * kSegmentSize;
     static constexpr float kBeta = 0.6;
     static constexpr float kAlpha = (3.0  * (kBeta / (2.0 - kBeta)));
-    static const uint32_t kNumRTTs = 12;
+    static const uint64_t kNumRTTs = 12;
     static const uint32_t kProbeSizeBytes = 2; 
   protected:
 
@@ -112,12 +112,12 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void OnConnect(int rv);
     void OnValidationComplete(IsCertificateValidCallback callback, int rv);
 
-    void UpdateRTTs(std::chrono::milliseconds rtt);
+    void UpdateRTTs(std::chrono::nanoseconds rtt);
     int CwndAvailable();
     void Loss(int num_losses);
     void Ack();
-    std::chrono::milliseconds RTT();
-    std::chrono::milliseconds Timeout();
+    uint64_t RTT();
+    uint64_t Timeout();
 
     scoped_refptr<net::IOBuffer> recvfrom_buffer_;
 
@@ -150,8 +150,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     uint16_t last_seq_num_ = 0;
     std::map<std::uint16_t, std::chrono::time_point<std::chrono::steady_clock>> unacked_sent_at_;
     std::set<std::uint16_t> unacked_;
-    std::chrono::milliseconds rtts_[kNumRTTs];
-    int rtt_index_ = 0;
+    uint64_t rtts_[kNumRTTs];
+    uint64_t rtt_index_ = 0;
 
     base::WeakPtrFactory<CatalystSocket> weak_ptr_factory_;
     DISALLOW_COPY_AND_ASSIGN(CatalystSocket);
