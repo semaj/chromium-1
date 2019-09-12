@@ -81,6 +81,39 @@ void CatalystSocket::OnSendComplete(int rv) {
   }
 }
 
+void CatalystSocket::OnRTTTimer() {
+
+  // Create an iterator pointing to start of set
+  auto it = unacked_.begin();
+
+  // Iterate over the set till end
+  int losses = 0;
+  while(it != unacked_.end())
+  {
+    auto ack_num = *it;
+    auto timeout = Timeout();
+    auto now = std::chrono::steady_clock::now();
+    auto sent_time = unacked_sent_at_[ack_num];
+    uint64_t elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - sent_time).count();
+    if (elapsed > timeout) {
+      LOG(INFO) << "Loss " << ack_num;
+      it = unacked_.erase(it);
+      losses++;
+    } else {
+      it++;
+    }
+  }
+  if (losses > 0) {
+    Loss(losses);
+  }
+  rtt_timer_.Start(
+      FROM_HERE,
+      base::TimeDelta::FromNanoseconds(RTT()),
+      this,
+      &CatalystSocket::OnRTTTimer
+      );
+}
+
 void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
   if (is_connected_) {
     // This is guaranteed by the maximum size enforced on mojo messages.
@@ -171,7 +204,15 @@ uint64_t CatalystSocket::RTT() {
   for (uint64_t i = 0; i < kNumRTTs; i++) {
     sum += rtts_[i];
   }
-  return sum / kNumRTTs;
+  auto avg = sum / kNumRTTs;
+  if (avg == 0) {
+    avg = kStartRTTns;
+  }
+  return avg;
+}
+
+uint64_t CatalystSocket::Timeout() {
+  return RTT() * kRTTFactorTimeout;
 }
 
 void CatalystSocket::Ack(uint32_t packet_size) {
@@ -189,6 +230,9 @@ void CatalystSocket::Ack(uint32_t packet_size) {
 }
 
 void CatalystSocket::Loss(int num_losses) {
+  if (num_losses == 0) {
+    return;
+  }
   int32_t new_cwnd;
   if (phase_ == kPhaseSlowStart) {
     new_cwnd = cwnd_size_ * (1.0 - kBeta);
@@ -221,8 +265,8 @@ void CatalystSocket::OnRecvComplete(int rv) {
     unsigned char * ack_num_pointer = reinterpret_cast<unsigned char*>(&ack_num);
     std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+1, ack_num_pointer+1);
     std::copy(recvfrom_buffer_->data()+1, recvfrom_buffer_->data()+kProbeSizeBytes, ack_num_pointer);
-    LOG(INFO) << "Received an ack " << ack_num;
     if (ack_num > 0) {
+      LOG(INFO) << "Received an ack " << ack_num;
       if (unacked_.erase(ack_num) > 0) {
         Ack(unacked_sizes_[ack_num]);
       } else { // expired 
@@ -239,16 +283,16 @@ void CatalystSocket::OnRecvComplete(int rv) {
       unacked_sizes_.erase(ack_num);
       LOG(INFO) << "RTT: " << RTT();
     } else {
+      LOG(INFO) << "Received a payload";
       std::vector<uint8_t> vec(rv - kProbeSizeBytes);
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
       client_->OnDataFrame(vec);
-      DoRecv();
     }
-
   } else {
     LOG(INFO) << "Recv UNsuccessful complete";
     OnError();
   }
+  DoRecv();
 }
 
 void CatalystSocket::DoRecv() {
@@ -289,6 +333,12 @@ void CatalystSocket::OnResolveComplete(int rv) {
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
   int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
   
+  rtt_timer_.Start(
+      FROM_HERE,
+      base::TimeDelta::FromNanoseconds(RTT()),
+      this,
+      &CatalystSocket::OnRTTTimer
+      );
   if (result != net::ERR_IO_PENDING) {
     OnConnect(result);
   }

@@ -99,6 +99,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     static constexpr float kAlpha = (3.0  * (kBeta / (2.0 - kBeta)));
     static const uint64_t kNumRTTs = 12;
     static const uint32_t kProbeSizeBytes = 2; 
+    static const uint64_t kStartRTTns = 200 * 1e6;
+    static const uint64_t kRTTFactorTimeout = 2;
 
     static const unsigned char kPhaseSlowStart = 0;
     static const unsigned char kPhaseCongestionAvoidance = 1;
@@ -115,12 +117,12 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void OnConnect(int rv);
     void OnValidationComplete(IsCertificateValidCallback callback, int rv);
 
-    void UpdateRTTs(std::chrono::nanoseconds rtt);
     int CwndAvailable();
     void Loss(int num_losses);
     void Ack(uint32_t packet_size);
     uint64_t RTT();
     uint64_t Timeout();
+    void OnRTTTimer();
 
     scoped_refptr<net::IOBuffer> recvfrom_buffer_;
 
@@ -157,6 +159,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     std::set<std::uint16_t> unacked_;
     uint64_t rtts_[kNumRTTs];
     uint64_t rtt_index_ = 0;
+    base::OneShotTimer rtt_timer_;
 
     base::WeakPtrFactory<CatalystSocket> weak_ptr_factory_;
     DISALLOW_COPY_AND_ASSIGN(CatalystSocket);
