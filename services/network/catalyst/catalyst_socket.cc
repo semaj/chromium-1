@@ -217,35 +217,34 @@ void CatalystSocket::OnRecvComplete(int rv) {
     return;
   }
   if (rv >= (int) kProbeSizeBytes) {
-    std::vector<uint8_t> vec(rv);
     uint16_t ack_num;
     unsigned char * ack_num_pointer = reinterpret_cast<unsigned char*>(&ack_num);
     std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+1, ack_num_pointer+1);
     std::copy(recvfrom_buffer_->data()+1, recvfrom_buffer_->data()+kProbeSizeBytes, ack_num_pointer);
     LOG(INFO) << "Received an ack " << ack_num;
-    if (unacked_.erase(ack_num) > 0) {
-      Ack(unacked_sizes_[ack_num]);
-    } else { // expired 
-      LOG(INFO) << "False loss " << ack_num;
-    }
-    auto received_time = std::chrono::steady_clock::now();
-    auto sent_time = unacked_sent_at_[ack_num];
-    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(received_time - sent_time);
-    LOG(INFO) << "Elapsed: " << elapsed.count();
-    rtts_[rtt_index_] = elapsed.count();
-    rtt_index_++;
-    rtt_index_ = rtt_index_ % kNumRTTs;
-    unacked_sent_at_.erase(ack_num);
-    unacked_sizes_.erase(ack_num);
-    LOG(INFO) << "RTT: " << RTT();
-
-    if (rv > (int) kProbeSizeBytes) {
+    if (ack_num > 0) {
+      if (unacked_.erase(ack_num) > 0) {
+        Ack(unacked_sizes_[ack_num]);
+      } else { // expired 
+        LOG(INFO) << "False loss " << ack_num;
+      }
+      auto received_time = std::chrono::steady_clock::now();
+      auto sent_time = unacked_sent_at_[ack_num];
+      auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(received_time - sent_time);
+      LOG(INFO) << "Elapsed: " << elapsed.count();
+      rtts_[rtt_index_] = elapsed.count();
+      rtt_index_++;
+      rtt_index_ = rtt_index_ % kNumRTTs;
+      unacked_sent_at_.erase(ack_num);
+      unacked_sizes_.erase(ack_num);
+      LOG(INFO) << "RTT: " << RTT();
+    } else {
+      std::vector<uint8_t> vec(rv - kProbeSizeBytes);
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
       client_->OnDataFrame(vec);
       DoRecv();
-    } else {
-      LOG(INFO) << "Just received an ack.";
     }
+
   } else {
     LOG(INFO) << "Recv UNsuccessful complete";
     OnError();

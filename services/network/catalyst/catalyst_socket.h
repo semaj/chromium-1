@@ -151,7 +151,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     unsigned char phase_ = kPhaseSlowStart;
     uint32_t cwnd_size_ = kStartCwndSize;
     uint32_t cwnd_used_ = 0;
-    uint16_t last_seq_num_ = 0;
+    uint16_t last_seq_num_ = 1;
     std::map<uint16_t, std::chrono::time_point<std::chrono::steady_clock>> unacked_sent_at_;
     std::map<uint16_t, uint32_t> unacked_sizes_;
     std::set<std::uint16_t> unacked_;
