@@ -99,6 +99,9 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     static constexpr float kAlpha = (3.0  * (kBeta / (2.0 - kBeta)));
     static const uint64_t kNumRTTs = 12;
     static const uint32_t kProbeSizeBytes = 2; 
+
+    static const unsigned char kPhaseSlowStart = 0;
+    static const unsigned char kPhaseCongestionAvoidance = 1;
   protected:
 
     class CatalystSocketEventHandler;
@@ -115,7 +118,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     void UpdateRTTs(std::chrono::nanoseconds rtt);
     int CwndAvailable();
     void Loss(int num_losses);
-    void Ack();
+    void Ack(uint32_t packet_size);
     uint64_t RTT();
     uint64_t Timeout();
 
@@ -145,10 +148,12 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
 
 
     float ssthresh_ = 65536 * 1.90;
-    int cwnd_size_;
-    int cwnd_used_;
+    unsigned char phase_ = kPhaseSlowStart;
+    uint32_t cwnd_size_ = kStartCwndSize;
+    uint32_t cwnd_used_ = 0;
     uint16_t last_seq_num_ = 0;
-    std::map<std::uint16_t, std::chrono::time_point<std::chrono::steady_clock>> unacked_sent_at_;
+    std::map<uint16_t, std::chrono::time_point<std::chrono::steady_clock>> unacked_sent_at_;
+    std::map<uint16_t, uint32_t> unacked_sizes_;
     std::set<std::uint16_t> unacked_;
     uint64_t rtts_[kNumRTTs];
     uint64_t rtt_index_ = 0;

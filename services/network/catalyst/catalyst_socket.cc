@@ -99,6 +99,7 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     LOG(INFO) << "Trying send message of size " << data.size();
     unacked_sent_at_[last_seq_num_] = std::chrono::steady_clock::now();
     unacked_.insert(last_seq_num_);
+    unacked_sizes_[last_seq_num_] = data.size();
     last_seq_num_++;
     const net::NetworkTrafficAnnotationTag bad_traffic_annotation =
       net::DefineNetworkTrafficAnnotation("bad", R"(
@@ -173,6 +174,43 @@ uint64_t CatalystSocket::RTT() {
   return sum / kNumRTTs;
 }
 
+void CatalystSocket::Ack(uint32_t packet_size) {
+  int32_t new_cwnd;
+  if (phase_ == kPhaseSlowStart) {
+    new_cwnd = cwnd_size_ +  round(kAlpha * kSegmentSize);
+    if (new_cwnd >= ssthresh_) {
+      phase_ = kPhaseCongestionAvoidance;
+    }
+  } else {
+    new_cwnd = cwnd_size_ + ((kAlpha * kSegmentSize) * (kSegmentSize / cwnd_size_));
+  }
+  cwnd_size_ = new_cwnd;
+  cwnd_used_ -= packet_size;
+}
+
+void CatalystSocket::Loss(int num_losses) {
+  int32_t new_cwnd;
+  if (phase_ == kPhaseSlowStart) {
+    new_cwnd = cwnd_size_ * (1.0 - kBeta);
+  } else {
+    if (num_losses == 1) {
+      new_cwnd = cwnd_size_ * (1.0 - kBeta);
+    } else {
+      phase_ = kPhaseSlowStart;
+      ssthresh_ = cwnd_size_ * (1.0 - kBeta);
+      new_cwnd = kAlpha * kSegmentSize;
+    }
+  }
+  if (new_cwnd < (float) kSegmentSize) {
+    new_cwnd = kSegmentSize;
+  }
+  cwnd_size_ = new_cwnd;
+  if (cwnd_size_ < cwnd_used_) {
+    cwnd_used_ = cwnd_size_;
+  }
+}
+
+
 void CatalystSocket::OnRecvComplete(int rv) {
   if (!wrapped_socket_) {
     LOG(INFO) << "CatalystSocket closed before onrecv completed.";
@@ -186,7 +224,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
     std::copy(recvfrom_buffer_->data()+1, recvfrom_buffer_->data()+kProbeSizeBytes, ack_num_pointer);
     LOG(INFO) << "Received an ack " << ack_num;
     if (unacked_.erase(ack_num) > 0) {
-      // UPDATE CWND
+      Ack(unacked_sizes_[ack_num]);
     } else { // expired 
       LOG(INFO) << "False loss " << ack_num;
     }
@@ -198,6 +236,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
     rtt_index_++;
     rtt_index_ = rtt_index_ % kNumRTTs;
     unacked_sent_at_.erase(ack_num);
+    unacked_sizes_.erase(ack_num);
     LOG(INFO) << "RTT: " << RTT();
 
     if (rv > (int) kProbeSizeBytes) {
