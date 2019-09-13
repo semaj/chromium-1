@@ -14,6 +14,7 @@ class MODULES_EXPORT UDPSocketHandleClient : public GarbageCollectedMixin {
  public:
   virtual ~UDPSocketHandleClient() = default;
   virtual void DidConnect() {}
+  virtual void DidReceiveRTTTokens(uint64_t tokens) {}
   virtual void DidReceiveMessage(std::unique_ptr<Vector<char>>) {}
   virtual void DidError() {}
   virtual void DidClose() {}

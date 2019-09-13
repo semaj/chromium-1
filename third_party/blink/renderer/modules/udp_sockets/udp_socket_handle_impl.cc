@@ -110,6 +110,10 @@ void UDPSocketHandleImpl::OnConnect() {
   client_->DidConnect();
 }
 
+void UDPSocketHandleImpl::OnRTT(uint64_t tokens) {
+  client_->DidReceiveRTTTokens(tokens);
+}
+
 void UDPSocketHandleImpl::OnDataFrame(const Vector<uint8_t>& data) {
   NETWORK_DVLOG(1) << this << " OnDataFrame(" << "(data size = " << data.size() << "))";
   if (!client_)

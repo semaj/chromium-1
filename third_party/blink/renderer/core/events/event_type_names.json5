@@ -236,6 +236,7 @@
     "resourcetimingbufferfull",
     "result",
     "resume",
+    "rtt",
     "scroll",
     "scrollend",
     "search",

@@ -8,5 +8,7 @@ blink_modules_sources("udp_sockets") {
     "udp_socket_handle.h",
     "udp_socket_handle_impl.h",
     "udp_socket_handle_impl.cc",
+    "rtt_event.h",
+    "rtt_event.cc",
   ]
 }

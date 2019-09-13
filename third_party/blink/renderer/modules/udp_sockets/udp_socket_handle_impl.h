@@ -62,6 +62,7 @@ class UDPSocketHandleImpl : public UDPSocketHandle,
   void OnError(uint32_t custom_reason) override;
   void OnConnect() override;
   void OnDataFrame(const Vector<uint8_t>& data) override;
+  void OnRTT(uint64_t tokens) override;
 
   Member<UDPSocketHandleClient> client_;
 

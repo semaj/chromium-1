@@ -15,6 +15,7 @@
     // networking
     attribute EventHandler onopen;
     attribute EventHandler onerror;
+    attribute EventHandler onrtt;
     //attribute EventHandler onclose;
     [RaisesException] void close();
     [RaisesException] boolean certIsValid(USVString cert_chain);

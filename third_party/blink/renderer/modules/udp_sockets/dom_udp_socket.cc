@@ -21,7 +21,7 @@
 #include "third_party/blink/renderer/core/inspector/console_message.h"
 #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h"
 #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h"
-//#include "third_party/blink/renderer/modules/udp_sockets/close_event.h"
+#include "third_party/blink/renderer/modules/udp_sockets/rtt_event.h"
 #include "third_party/blink/renderer/modules/udp_sockets/udp_socket_handle_impl.h"
 #include "third_party/blink/renderer/platform/bindings/exception_state.h"
 #include "third_party/blink/renderer/platform/blob/blob_data.h"
@@ -261,6 +261,15 @@ void DOMUDPSocket::DidConnect() {
   }
   state_ = kOpen;
   event_queue_->Dispatch(Event::Create(event_type_names::kOpen));
+}
+
+void DOMUDPSocket::DidReceiveRTTTokens(uint64_t tokens) {
+  DCHECK_NE(state_, kConnecting);
+  if (state_ != kOpen) { 
+    LOG(INFO) << "Not open!";
+    return;
+  }
+  event_queue_->Dispatch(RttEvent::Create(tokens));
 }
 
 void DOMUDPSocket::DidReceiveMessage(std::unique_ptr<Vector<char>> binary_data) {

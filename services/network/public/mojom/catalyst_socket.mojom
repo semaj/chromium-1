@@ -11,6 +11,7 @@ interface CatalystSocketClient {
   OnError(uint32 custom_reason);
   OnConnect();
   OnDataFrame(array<uint8> data);
+  OnRTT(uint64 tokens);
 };
 
 interface CatalystSocket {

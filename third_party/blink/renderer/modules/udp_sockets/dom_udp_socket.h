@@ -60,6 +60,7 @@ namespace blink {
     DEFINE_ATTRIBUTE_EVENT_LISTENER(message, kMessage);
     DEFINE_ATTRIBUTE_EVENT_LISTENER(error, kError);
     DEFINE_ATTRIBUTE_EVENT_LISTENER(close, kClose);
+    DEFINE_ATTRIBUTE_EVENT_LISTENER(rtt, kRtt);
 
     //// EventTarget functions.
     const AtomicString& InterfaceName() const override;
@@ -78,6 +79,7 @@ namespace blink {
 
     //// UDPSocketHandleClient functions.
     void DidConnect() override;
+    void DidReceiveRTTTokens(uint64_t tokens) override;
     void DidReceiveMessage(std::unique_ptr<Vector<char>>) override;
     void DidError() override;
     void DidClose() override;
