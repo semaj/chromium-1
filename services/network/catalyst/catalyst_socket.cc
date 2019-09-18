@@ -297,7 +297,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
       unacked_sent_at_.erase(ack_num);
       LOG(INFO) << "RTT: " << RTT();
     } else {
-      LOG(INFO) << "Received a payload";
+      LOG(INFO) << "Received a payload " << rv - kProbeSizeBytes;
       std::vector<uint8_t> vec(rv - kProbeSizeBytes);
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
       client_->OnDataFrame(vec);
@@ -336,6 +336,7 @@ void CatalystSocket::OnResolveComplete(int rv) {
   LOG(INFO) << "Looking at front";
   // Choose the first result, unless there's an IPV4 address
   net::IPEndPoint ip_endpoint = results.value().front();
+  net::IPEndPoint ip_endpoint2 = *(new net::IPEndPoint(ip_endpoint.address(), 443));
   for (auto pr = results.value().begin(); pr < results.value().end(); pr++){
     if (pr->GetFamily() == net::ADDRESS_FAMILY_IPV4) {
       ip_endpoint = *pr;
@@ -343,8 +344,8 @@ void CatalystSocket::OnResolveComplete(int rv) {
     }
   }
   //DVLOG(1) << "Resolution: " << ip_endpoint;
-  LOG(INFO) << "Resolved to: " << ip_endpoint.ToString();
-  wrapped_socket_ = CreateSocketWrapper(ip_endpoint);
+  LOG(INFO) << "Resolved to: " << ip_endpoint2.ToString();
+  wrapped_socket_ = CreateSocketWrapper(ip_endpoint2);
   int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
   
   if (result != net::ERR_IO_PENDING) {
