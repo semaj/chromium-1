@@ -111,7 +111,9 @@ void CatalystSocket::OnRTTTimer() {
     DCHECK_LE(lost_size, cwnd_used_);
     cwnd_used_ -= lost_size;
   }
+  LOG(INFO) << "AVAILABLE " << (cwnd_size_ - cwnd_used_);
   client_->OnRTT(cwnd_size_ - cwnd_used_);
+  //client_->OnRTT(1000000);
   rtt_timer_.Start(
       FROM_HERE,
       base::TimeDelta::FromNanoseconds(RTT()),
@@ -153,7 +155,7 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
           )");
     int net_result = wrapped_socket_->Write(
         std::move(data_to_pass), total_data_size,
-        base::BindOnce(&CatalystSocket::OnSendComplete, 
+        base::BindOnce(&CatalystSocket::OnSendComplete,
                        weak_ptr_factory_.GetWeakPtr()),
         bad_traffic_annotation);
     if (net_result != net::ERR_IO_PENDING) {
@@ -287,7 +289,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
       if (unacked_.erase(ack_num) > 0) {
         Ack(unacked_sizes_[ack_num]);
         unacked_sizes_.erase(ack_num);
-      } else { // expired 
+      } else { // expired
         LOG(INFO) << "False loss " << ack_num << " elapsed: " << elapsed.count();
       }
       LOG(INFO) << "Elapsed: " << elapsed.count();
@@ -332,7 +334,7 @@ void CatalystSocket::OnResolveComplete(int rv) {
   if (results.value().empty()) {
     // some error
     LOG(INFO) << "Resolution returned nothing!";
-  } 
+  }
   LOG(INFO) << "Looking at front";
   // Choose the first result, unless there's an IPV4 address
   net::IPEndPoint ip_endpoint = results.value().front();
@@ -347,7 +349,7 @@ void CatalystSocket::OnResolveComplete(int rv) {
   LOG(INFO) << "Resolved to: " << ip_endpoint2.ToString();
   wrapped_socket_ = CreateSocketWrapper(ip_endpoint2);
   int result = wrapped_socket_->Connect(base::BindOnce(&CatalystSocket::OnConnect, base::Unretained(this)));
-  
+
   if (result != net::ERR_IO_PENDING) {
     OnConnect(result);
   }
@@ -380,7 +382,7 @@ void CatalystSocket::Connect(mojom::CatalystSocketClientPtr client) {
   resolve_request_ = resolver_->CreateRequest(host_port, net::NetLogWithSource(), base::nullopt);
   LOG(INFO) << "Starting resolution";
   int net_result = resolve_request_->Start(
-      base::BindOnce(&CatalystSocket::OnResolveComplete, 
+      base::BindOnce(&CatalystSocket::OnResolveComplete,
                      base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING)
     OnResolveComplete(net_result);

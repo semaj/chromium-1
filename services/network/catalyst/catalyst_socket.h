@@ -98,7 +98,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
     static constexpr float kBeta = 0.6;
     static constexpr float kAlpha = (3.0  * (kBeta / (2.0 - kBeta)));
     static const uint64_t kNumRTTs = 12;
-    static const uint64_t kProbeSizeBytes = 2; 
+    static const uint64_t kProbeSizeBytes = 2;
     static const uint64_t kStartRTTns = 200 * 1e6;
     static const uint64_t kRTTFactorTimeout = 2;
 
