@@ -138,6 +138,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CatalystSocket : public mojom::CatalystS
 
     int child_id_;
     int frame_id_;
+    int counter_;
 
     std::unique_ptr<net::HostResolver> resolver_;
     std::unique_ptr<net::HostResolver::ResolveHostRequest> resolve_request_;

@@ -43,6 +43,7 @@ CatalystSocket::CatalystSocket(
       //delay_(delay),
       child_id_(child_id),
       frame_id_(frame_id),
+      counter_(0),
       resolver_(net::HostResolver::CreateDefaultResolver(nullptr)),
       is_connected_(false),
       cert_verifier_(std::make_unique<net::MultiThreadedCertVerifier>(net::CertVerifyProc::CreateDefault())),
@@ -76,7 +77,7 @@ void CatalystSocket::GoAway() {
 
 void CatalystSocket::OnSendComplete(int rv) {
   if (rv != net::OK && rv < 0) {
-    LOG(INFO) << "Send error " << rv;
+    //LOG(INFO) << "Send error " << rv;
     OnError();
   }
 }
@@ -97,7 +98,7 @@ void CatalystSocket::OnRTTTimer() {
     auto sent_time = unacked_sent_at_[ack_num];
     uint64_t elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - sent_time).count();
     if (elapsed > timeout) {
-      LOG(INFO) << "Loss " << ack_num << " elapsed: " << elapsed;
+      //LOG(INFO) << "Loss " << ack_num << " elapsed: " << elapsed;
       lost_size += unacked_sizes_[ack_num];
       it = unacked_.erase(it);
       unacked_sizes_.erase(ack_num);
@@ -111,7 +112,7 @@ void CatalystSocket::OnRTTTimer() {
     DCHECK_LE(lost_size, cwnd_used_);
     cwnd_used_ -= lost_size;
   }
-  LOG(INFO) << "AVAILABLE " << (cwnd_size_ - cwnd_used_);
+  //LOG(INFO) << "AVAILABLE " << (cwnd_size_ - cwnd_used_);
   client_->OnRTT(cwnd_size_ - cwnd_used_);
   //client_->OnRTT(1000000);
   rtt_timer_.Start(
@@ -132,17 +133,17 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
       OnError();
       return;
     }
-    DVLOG(1) << "First byte: " << data[0];
+    //DVLOG(1) << "First byte: " << data[0];
     // TODO(darin): Avoid this copy.
     int total_data_size = data.size() + kProbeSizeBytes;
     net::IOBuffer *data_to_pass = new net::IOBuffer(total_data_size);
-    LOG(INFO) << "Sending probe " << last_seq_num_;
+    //LOG(INFO) << "Sending probe " << last_seq_num_;
     unsigned char * last_seq_num_byte_pointer_ = reinterpret_cast<unsigned char*>(&last_seq_num_);
     std::copy(last_seq_num_byte_pointer_+1, last_seq_num_byte_pointer_+kProbeSizeBytes, data_to_pass->data());
     std::copy(last_seq_num_byte_pointer_, last_seq_num_byte_pointer_+1, data_to_pass->data()+1);
     std::copy(data.begin(), data.end(), data_to_pass->data()+kProbeSizeBytes);
 
-    LOG(INFO) << "Trying send message of size " << data.size();
+    //LOG(INFO) << "Trying send message of size " << data.size();
     unacked_sent_at_[last_seq_num_] = std::chrono::steady_clock::now();
     unacked_.insert(last_seq_num_);
     unacked_sizes_[last_seq_num_] = data.size();
@@ -159,10 +160,10 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
                        weak_ptr_factory_.GetWeakPtr()),
         bad_traffic_annotation);
     if (net_result != net::ERR_IO_PENDING) {
-      DVLOG(1) << "Executing send: " << net_result;
+      //DVLOG(1) << "Executing send: " << net_result;
       OnSendComplete(net_result);
     } else {
-      DVLOG(1) << "Send was queued.";
+      //DVLOG(1) << "Send was queued.";
     }
   } else {
     LOG(INFO) << "Trying to send while not connected.";
@@ -171,10 +172,10 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
 
 void CatalystSocket::OnValidationComplete(IsCertificateValidCallback callback, int rv) {
   if (rv >= 0) {
-    DVLOG(1) << "Validation successful";
+    //DVLOG(1) << "Validation successful";
     std::move(callback).Run(true);
   } else {
-    DVLOG(1) << "Validation UNsuccessful";
+    //DVLOG(1) << "Validation UNsuccessful";
     std::move(callback).Run(false);
   }
 }
@@ -207,7 +208,7 @@ void CatalystSocket::IsCertificateValid(const std::string& cert_chain,
   if (rv != net::ERR_IO_PENDING) {
     OnValidationComplete(std::move(callback), rv);
   } else {
-    DVLOG(1) << "Validation queued";
+    //DVLOG(1) << "Validation queued";
   }
 }
 
@@ -267,7 +268,7 @@ void CatalystSocket::Loss(int num_losses) {
   if (cwnd_size_ < cwnd_used_) {
     cwnd_used_ = cwnd_size_;
   }
-  LOG(INFO) << "Loss cwnd: " << cwnd_size_ << " used: " << cwnd_used_;
+  //LOG(INFO) << "Loss cwnd: " << cwnd_size_ << " used: " << cwnd_used_;
 }
 
 
@@ -282,7 +283,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
     std::copy(recvfrom_buffer_->data(), recvfrom_buffer_->data()+1, ack_num_pointer+1);
     std::copy(recvfrom_buffer_->data()+1, recvfrom_buffer_->data()+kProbeSizeBytes, ack_num_pointer);
     if (ack_num > 0) {
-      LOG(INFO) << "Received an ack " << ack_num;
+      //LOG(INFO) << "Received an ack " << ack_num;
       auto received_time = std::chrono::steady_clock::now();
       auto sent_time = unacked_sent_at_[ack_num];
       auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(received_time - sent_time);
@@ -290,22 +291,22 @@ void CatalystSocket::OnRecvComplete(int rv) {
         Ack(unacked_sizes_[ack_num]);
         unacked_sizes_.erase(ack_num);
       } else { // expired
-        LOG(INFO) << "False loss " << ack_num << " elapsed: " << elapsed.count();
+        //LOG(INFO) << "False loss " << ack_num << " elapsed: " << elapsed.count();
       }
-      LOG(INFO) << "Elapsed: " << elapsed.count();
+      //LOG(INFO) << "Elapsed: " << elapsed.count();
       rtts_[rtt_index_] = elapsed.count();
       rtt_index_++;
       rtt_index_ = rtt_index_ % kNumRTTs;
       unacked_sent_at_.erase(ack_num);
-      LOG(INFO) << "RTT: " << RTT();
+      //LOG(INFO) << "RTT: " << RTT();
     } else {
-      LOG(INFO) << "Received a payload " << rv - kProbeSizeBytes;
+      LOG(INFO) << "Received a payload " << rv - kProbeSizeBytes << " counter " << ++counter_;
       std::vector<uint8_t> vec(rv - kProbeSizeBytes);
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
       client_->OnDataFrame(vec);
     }
   } else {
-    LOG(INFO) << "Recv UNsuccessful complete";
+    //LOG(INFO) << "Recv UNsuccessful complete";
     OnError();
   }
   DoRecv();
@@ -314,13 +315,13 @@ void CatalystSocket::OnRecvComplete(int rv) {
 void CatalystSocket::DoRecv() {
   recvfrom_buffer_ =
       base::MakeRefCounted<net::IOBuffer>(static_cast<size_t>(kMaxReadSize));
-  DVLOG(1) << "Starting DoRecv";
+  //DVLOG(1) << "Starting DoRecv";
   int net_result = wrapped_socket_->Read(
       recvfrom_buffer_.get(), kMaxReadSize,
       base::BindOnce(&CatalystSocket::OnRecvComplete,
         base::Unretained(this)));
   if (net_result != net::ERR_IO_PENDING) {
-    DVLOG(1) << "Recv queued";
+    //DVLOG(1) << "Recv queued";
     OnRecvComplete(net_result);
   }
 }
@@ -335,7 +336,7 @@ void CatalystSocket::OnResolveComplete(int rv) {
     // some error
     LOG(INFO) << "Resolution returned nothing!";
   }
-  LOG(INFO) << "Looking at front";
+  //LOG(INFO) << "Looking at front";
   // Choose the first result, unless there's an IPV4 address
   net::IPEndPoint ip_endpoint = results.value().front();
   net::IPEndPoint ip_endpoint2 = *(new net::IPEndPoint(ip_endpoint.address(), 443));
