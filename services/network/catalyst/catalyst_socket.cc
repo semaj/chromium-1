@@ -410,7 +410,7 @@ std::unique_ptr<net::DTLSClientSocketImpl> CatalystSocket::CreateSocketWrapper(n
        delegate_->GetURLRequestContext()->cert_transparency_verifier(),
        delegate_->GetURLRequestContext()->ct_policy_enforcer(),
        nullptr /* Disables SSL session caching */);
-  std::unique_ptr<UDPStreamSocket> stream_socket = std::make_unique<UDPStreamSocket>(net::DatagramSocket::RANDOM_BIND, nullptr, net::NetLogSource(), remote_addr);
+  std::unique_ptr<net::UDPStreamSocket> stream_socket = std::make_unique<net::UDPStreamSocket>(net::DatagramSocket::RANDOM_BIND, nullptr, net::NetLogSource(), remote_addr);
   return std::make_unique<net::DTLSClientSocketImpl>(std::move(stream_socket), net::HostPortPair::FromIPEndPoint(remote_addr), ssl_config, ssl_context);
 
 }

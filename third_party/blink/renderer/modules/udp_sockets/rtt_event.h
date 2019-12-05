@@ -61,7 +61,7 @@ class RttEvent final : public Event {
 
   // Event function.
   const AtomicString& InterfaceName() const override {
-    return event_interface_names::kRttEvent;
+    return event_interface_names::kCloseEvent;
   }
 
   void Trace(blink::Visitor* visitor) override { Event::Trace(visitor); }

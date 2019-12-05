@@ -404,7 +404,7 @@ const SSL_PRIVATE_KEY_METHOD
 };
 
 DTLSClientSocketImpl::DTLSClientSocketImpl(
-    std::unique_ptr<network::UDPStreamSocket> nested_socket,
+    std::unique_ptr<net::UDPStreamSocket> nested_socket,
     const HostPortPair& host_and_port,
     const SSLConfig& ssl_config,
     const SSLClientSocketContext& context)

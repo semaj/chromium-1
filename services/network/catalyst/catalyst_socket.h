@@ -12,7 +12,7 @@
 #include <vector>
 #include <chrono>
 
-#include "udp_stream_socket.h"
+#include "net/catalyst/udp_stream_socket.h"
 
 #include "base/component_export.h"
 #include "base/macros.h"
