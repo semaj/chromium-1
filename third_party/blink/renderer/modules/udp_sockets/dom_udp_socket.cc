@@ -146,7 +146,8 @@ static void SetInvalidStateErrorForSendMethod(ExceptionState& exception_state) {
 DOMUDPSocket::DOMUDPSocket(ExecutionContext* context)
     : ContextLifecycleStateObserver(context),
       event_queue_(EventQueue::Create(this)),
-      state_(kConnecting) {}
+      state_(kConnecting),
+      counter_(0) {}
 
 DOMUDPSocket::~DOMUDPSocket() {
   DCHECK(!handle_);
@@ -185,8 +186,8 @@ void DOMUDPSocket::Connect(ExceptionState& exception_state) {
   if (interface_provider)
     interface_provider->GetInterface(std::move(socket_request));
   NETWORK_DVLOG(1) << "REQUEST MADE";
-  handle_->Connect(std::move(socket_ptr), 
-      GetExecutionContext()->UserAgent(), 
+  handle_->Connect(std::move(socket_ptr),
+      GetExecutionContext()->UserAgent(),
       GetExecutionContext()->GetTaskRunner(TaskType::kNetworking).get());
   NETWORK_DVLOG(1) << "CONNECT DONE";
   return;
@@ -265,7 +266,7 @@ void DOMUDPSocket::DidConnect() {
 
 void DOMUDPSocket::DidReceiveRTTTokens(uint64_t tokens) {
   DCHECK_NE(state_, kConnecting);
-  if (state_ != kOpen) { 
+  if (state_ != kOpen) {
     LOG(INFO) << "Not open!";
     return;
   }
@@ -275,6 +276,7 @@ void DOMUDPSocket::DidReceiveRTTTokens(uint64_t tokens) {
 void DOMUDPSocket::DidReceiveMessage(std::unique_ptr<Vector<char>> binary_data) {
   NETWORK_DVLOG(1) << "UDPSocket " << this << " DidReceiveMessage() "
                    << binary_data->size() << " byte binary message";
+  LOG(INFO) << "Renderer payload counter " << ++counter_;
 
   DCHECK_NE(state_, kConnecting);
   if (state_ != kOpen) {

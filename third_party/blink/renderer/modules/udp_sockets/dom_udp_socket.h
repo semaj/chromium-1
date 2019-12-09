@@ -38,7 +38,7 @@ namespace blink {
     // DOMWebSocket instances must be used with a wrapper since this class's
     // lifetime management is designed assuming the V8 holds a ref on it while
     // hasPendingActivity() returns true.
-    static DOMUDPSocket* Create(ExecutionContext*, 
+    static DOMUDPSocket* Create(ExecutionContext*,
                                 ExceptionState&);
 
     ~DOMUDPSocket() override;
@@ -140,6 +140,7 @@ namespace blink {
     Member<UDPSocketHandle> handle_;
 
     State state_;
+    int counter_;
 
   };
 }
