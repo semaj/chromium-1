@@ -60,7 +60,9 @@ void UDPSocketHandleImpl::Send(const char* data, wtf_size_t size) {
 
   // TODO(darin): Avoid this copy.
   Vector<uint8_t> data_to_pass(size);
+  LOG(INFO) << "COPY2 START";
   std::copy(data, data + size, data_to_pass.begin());
+  LOG(INFO) << "COPY2 STOP";
 
   udp_socket_->SendFrame(data_to_pass);
 }
@@ -115,6 +117,7 @@ void UDPSocketHandleImpl::OnRTT(uint64_t tokens) {
 }
 
 void UDPSocketHandleImpl::OnDataFrame(const Vector<uint8_t>& data) {
+  LOG(INFO) << "RECEIVE OnDataFrame";
   NETWORK_DVLOG(1) << this << " OnDataFrame(" << "(data size = " << data.size() << "))";
   if (!client_)
     return;

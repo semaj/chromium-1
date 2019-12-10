@@ -1302,6 +1302,7 @@ int DTLSClientSocketImpl::DoHandshakeLoop(int last_io_result) {
 }
 
 int DTLSClientSocketImpl::DoPayloadRead(IOBuffer* buf, int buf_len) {
+  LOG(INFO) << "DTLS payload read start";
   crypto::OpenSSLErrStackTracer err_tracer(FROM_HERE);
 
   DCHECK_LT(0, buf_len);
@@ -1393,6 +1394,7 @@ int DTLSClientSocketImpl::DoPayloadRead(IOBuffer* buf, int buf_len) {
     pending_read_ssl_error_ = SSL_ERROR_NONE;
     pending_read_error_info_ = OpenSSLErrorInfo();
   }
+  LOG(INFO) << "DTLS payload read stop";
   return rv;
 }
 

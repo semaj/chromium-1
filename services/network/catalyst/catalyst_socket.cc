@@ -302,7 +302,10 @@ void CatalystSocket::OnRecvComplete(int rv) {
     } else {
       LOG(INFO) << "Received a payload " << rv - kProbeSizeBytes << " counter " << ++counter_;
       std::vector<uint8_t> vec(rv - kProbeSizeBytes);
+      LOG(INFO) << "COPY1 START";
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
+      LOG(INFO) << "COPY1 STOP";
+      LOG(INFO) << "SEND OnDataFrame";
       client_->OnDataFrame(vec);
     }
   } else {
