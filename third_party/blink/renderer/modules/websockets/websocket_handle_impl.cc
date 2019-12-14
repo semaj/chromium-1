@@ -179,6 +179,8 @@ void WebSocketHandleImpl::OnDataFrame(
     bool fin,
     network::mojom::blink::WebSocketMessageType type,
     const Vector<uint8_t>& data) {
+  LOG(INFO) << "OnDataFrame RECEIVE";
+  LOG(INFO) << "DFSize " << data.size();
   NETWORK_DVLOG(1) << this << " OnDataFrame(" << fin << ", " << type << ", "
                    << "(data size = " << data.size() << "))";
   if (!client_)

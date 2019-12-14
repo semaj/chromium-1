@@ -162,6 +162,7 @@ void WebSocket::WebSocketEventHandler::OnDataFrame(
               data_to_pass.begin());
   }
 
+  LOG(INFO) << "OnDataFrame SEND";
   impl_->client_->OnDataFrame(fin, OpCodeToMessageType(type), data_to_pass);
 }
 

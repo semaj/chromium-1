@@ -128,11 +128,12 @@ void CatalystSocket::SendFrame(const std::vector<uint8_t>& data) {
     // This is guaranteed by the maximum size enforced on mojo messages.
     DCHECK_LE(data.size(), static_cast<size_t>(INT_MAX));
 
-    if (data.size() > (cwnd_size_ - cwnd_used_)) {
-      LOG(INFO) << "INVALID SEND! NOT ENOUGH TOKENS.";
-      OnError();
-      return;
-    }
+    // uncomment this later
+    //if (data.size() > (cwnd_size_ - cwnd_used_)) {
+      //LOG(INFO) << "INVALID SEND! NOT ENOUGH TOKENS.";
+      //OnError();
+      //return;
+    //}
     //DVLOG(1) << "First byte: " << data[0];
     // TODO(darin): Avoid this copy.
     int total_data_size = data.size() + kProbeSizeBytes;
@@ -302,9 +303,7 @@ void CatalystSocket::OnRecvComplete(int rv) {
     } else {
       LOG(INFO) << "Received a payload " << rv - kProbeSizeBytes << " counter " << ++counter_;
       std::vector<uint8_t> vec(rv - kProbeSizeBytes);
-      LOG(INFO) << "COPY1 START";
       std::copy(recvfrom_buffer_->data()+kProbeSizeBytes, recvfrom_buffer_->data()+rv, vec.begin());
-      LOG(INFO) << "COPY1 STOP";
       LOG(INFO) << "SEND OnDataFrame";
       client_->OnDataFrame(vec);
     }

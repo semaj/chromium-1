@@ -283,10 +283,8 @@ void DOMUDPSocket::DidReceiveMessage(std::unique_ptr<Vector<char>> binary_data) 
     return;
   }
 
-  LOG(INFO) << "COPY3 START";
   DOMArrayBuffer* array_buffer =
       DOMArrayBuffer::Create(binary_data->data(), binary_data->size());
-  LOG(INFO) << "COPY3 STOP";
   event_queue_->Dispatch(MessageEvent::Create(array_buffer));
 }
 
