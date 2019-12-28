@@ -286,6 +286,7 @@ void DOMUDPSocket::DidReceiveMessage(std::unique_ptr<Vector<char>> binary_data) 
   DOMArrayBuffer* array_buffer =
       DOMArrayBuffer::Create(binary_data->data(), binary_data->size());
   event_queue_->Dispatch(MessageEvent::Create(array_buffer));
+  LOG(INFO) << "STOP RENDERER RECEIVE";
 }
 
 void DOMUDPSocket::DidError() {

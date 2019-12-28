@@ -366,12 +366,12 @@ void CatalystSocket::OnConnect(int result) {
   if (result == net::OK) {
     is_connected_ = true;
     client_->OnConnect();
-    rtt_timer_.Start(
-        FROM_HERE,
-        base::TimeDelta::FromNanoseconds(RTT()),
-        this,
-        &CatalystSocket::OnRTTTimer
-        );
+    //rtt_timer_.Start(
+        //FROM_HERE,
+        //base::TimeDelta::FromNanoseconds(RTT()),
+        //this,
+        //&CatalystSocket::OnRTTTimer
+        //);
     DoRecv();
   } else {
     wrapped_socket_.reset();

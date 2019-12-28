@@ -116,6 +116,7 @@ void UDPSocketHandleImpl::OnRTT(uint64_t tokens) {
 
 void UDPSocketHandleImpl::OnDataFrame(const Vector<uint8_t>& data) {
   LOG(INFO) << "RECEIVE OnDataFrame";
+  LOG(INFO) << "START RENDERER RECEIVE";
   NETWORK_DVLOG(1) << this << " OnDataFrame(" << "(data size = " << data.size() << "))";
   if (!client_)
     return;
